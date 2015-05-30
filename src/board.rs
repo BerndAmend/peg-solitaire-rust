@@ -1,6 +1,8 @@
 /// current state of a board
 pub type State = u64;
 
+pub const EMPTY_STATE: u64 = 0u64;
+
 #[derive(Debug)]
 pub enum MoveDirections {
     Horizontal,

@@ -1,6 +1,7 @@
 mod board;
 mod solver;
 mod generator;
+mod boardset;
 
 fn main() {
 	
