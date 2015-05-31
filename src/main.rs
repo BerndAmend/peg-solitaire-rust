@@ -1,7 +1,8 @@
 mod board;
+mod boardset;
+mod boards;
 mod solver;
 mod generator;
-mod boardset;
 
 fn main() {
 	
