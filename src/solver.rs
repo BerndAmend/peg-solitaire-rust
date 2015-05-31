@@ -1,4 +1,19 @@
-struct State;
+use board::*;
+use boardset::*;
+
+pub struct Solver<T: Board> {
+    board: T,
+    solution: Vec<BoardSet>,
+}
+
+impl<T: Board> Solver<T> {
+    pub fn new(board: T) -> Solver<T> {
+        Solver {
+            board: board,
+            solution: vec![]
+        }
+    }
+}
 
 /*
 class Solver(val game: Board, val observer: StatusObserver, threadcount: Int) {
@@ -29,7 +44,7 @@ class Solver(val game: Board, val observer: StatusObserver, threadcount: Int) {
         val clean = end_pegs >= 0
 
         var end_set = game.length - (if(clean) end_pegs else 0)
-        if(endField != LongHashSet.INVALID_ELEMENT) {
+        if(endField != EMPTY_STATE) {
             end_set = game.length - java.lang.Long.bitCount(endField) - 1
         }
         require(end_set > start_set)

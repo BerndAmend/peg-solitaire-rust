@@ -18,7 +18,7 @@ impl BoardSet {
     pub fn new() -> BoardSet {
         BoardSet::with_capacity(0)
     }
-    
+
     pub fn with_capacity(expected_size: usize) -> BoardSet {
         let size = BoardSet::compute_capacity_for_size(expected_size, INITIAL_SIZE);
         let mut data = Vec::with_capacity(size);
@@ -28,7 +28,7 @@ impl BoardSet {
             data: data
         }
     }
-    
+
     /// Reserves capacity for at least additional more elements to be inserted in the HashSet.
     /// The collection may reserve more space to avoid frequent reallocations.
     pub fn reserve(&mut self, additional: usize) {
@@ -50,12 +50,12 @@ impl BoardSet {
     pub fn len(&self) -> usize {
         self.len
     }
-    
+
     /// Returns true if the set contains no elements.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-    
+
     /// current fill state in percent
     pub fn used(&self) -> f32 {
         if self.len == 0 {
@@ -64,12 +64,12 @@ impl BoardSet {
             (self.len as f32) / (self.data.len() as f32)
         }
     }
-    
+
     /// Clears the set, removing all values and freeing the memory.
     pub fn clear(&mut self) {
         *self = BoardSet::new();
     }
-    
+
     /// Clears the set, removing all values and reallocating the internal
     /// memory to fit new_expected_size elements.
     pub fn clear_with_size(&mut self, expected_size: usize) {

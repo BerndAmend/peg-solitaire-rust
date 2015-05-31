@@ -1,141 +1,90 @@
 use board::*;
 
+fn generate_shift_code(transformation: &Transformation) -> String {
+    let mut result = String::new();
+
+    result.push_str("(\n               ");
+    let mut i = 0;
+    for (&shift, pos) in transformation.iter() {
+        result.push_str("((state & ");
+        result.push_str(&pos.to_string());
+        result.push_str("u64)");
+
+        if shift > 0 {
+            result.push_str(" << ");
+            result.push_str(&shift.to_string());
+        } else if shift < 0 {
+            result.push_str(" >> ");
+            result.push_str(&i32::abs(shift).to_string());
+        }
+        result.push_str(")");
+
+        if i % 4 == 3 {
+            result.push_str("\n            ");
+        }
+
+        if i != transformation.len() - 1 {
+            result.push_str(" | ");
+        }
+
+        i += 1;
+    }
+
+    result.push_str(")");
+
+    result
+}
+
 pub fn get_rust_code(desc: &Description) -> String {
+    let mut r = String::new();
 
-/*
-    fn generateCode(in: Vec<Vec<i32>>) -> String {
-        val field: Array[Int] = (in.flatten.filter(_ != -1))
-    
-        // calculate operations
-        val output = new scala.collection.mutable.HashMap[Int, Long]
-    
-        for (i <- (field.length - 1) to 0 by -1) {
-            val mask = 1L << i
-    
-            val e = field(field.length - 1 - i)
-            val diff = e - i
-    
-            if (output contains diff) {
-                output(diff) |= mask
-            } else {
-                output(diff) = mask
-            }
-        }
-    
-        // generate code
-        val result = new StringBuilder
-    
-        result append "(\n   "
-        var pos = 0
-        for (i <- output) {
-            result append "((f & "
-            result append i._2
-            result append "L)"
-    
-            if (i._1 > 0) {
-                result append " << "
-                result append math.abs(i._1)
-            } else if (i._1 < 0) {
-                result append " >> "
-                result append math.abs(i._1)
-            }
-            result append ")"
-    
-            if (pos % 4 == 3)
-                result append "\n"
-    
-            if (pos != output.size - 1)
-                result append " | "
-    
-            pos += 1
-        }
-    
-        result append ")"
-    
-        result.result
-    }
-    
-    val get_normalform = new StringBuilder
-    val get_equivalent_fields = new StringBuilder
+    r.push_str(&format!("pub struct {} {{\n", &desc.name));
+    r.push_str(         "    desc: Description,\n");
+    r.push_str(         "}\n\n");
 
-    get_normalform append "def getNormalform(f: Long): Long = {\n"
-    get_normalform append "var n = f\n\n"
+    r.push_str(&format!("impl {} {{\n", &desc.name));
+    r.push_str(&format!("    pub fn new() -> {} {{\n", &desc.name));
+    r.push_str(         "        use board::MoveDirections::*;\n");
+    r.push_str(&format!("        {} {{\n", &desc.name));
+    r.push_str(&format!("            desc: Description::new(\"{}\", \"{}\", &{:?}).unwrap()\n", &desc.name, &desc.layout.replace("\n", "\\n"), &desc.directions));
+    r.push_str(         "        }\n");
+    r.push_str(         "    }\n");
+    r.push_str(         "}\n\n");
 
-    get_equivalent_fields append "def getEquivalentFields(f: Long) = {\n"
-    get_equivalent_fields append "val n = new Array[Long](8)\n"
-    get_equivalent_fields append "n(0) = f\n\n"
+    r.push_str(&format!("impl Board for {} {{\n", &desc.name));
 
-    if (is_transformation_valid(rotate180)) {
-        val c_rotate180 = generateCode(rotate180(lookUpTable))
-        get_normalform append "val n180 = " + c_rotate180 + "\n"
-        get_normalform append "if(n180 < n) n = n180\n\n"
+    r.push_str(         "    fn description(&self) -> &Description {\n");
+    r.push_str(         "        &self.desc\n");
+    r.push_str(         "    }\n\n");
 
-        get_equivalent_fields append "n(1) = " + c_rotate180 + "\n"
+    r.push_str(         "    fn normalize(&self, state: State) -> State {\n");
+    r.push_str(         "        let mut n = state;\n");
+
+    let mut pos = 0;
+    for trans in desc.transformations.iter() {
+    r.push_str(&format!("        let p{} = {};\n", pos, generate_shift_code(&trans)));
+    r.push_str(&format!("        if p{} < n {{ n = p{}; }}\n", pos, pos));
+    pos += 1;
     }
 
-    if (is_transformation_valid(rotate90)) {
-        val c_rotate90 = generateCode(rotate90(lookUpTable))
-        get_normalform append "val n90 = " + c_rotate90 + "\n"
-        get_normalform append "if(n90 < n) n = n90\n\n"
+    r.push_str(         "        n\n");
+    r.push_str(         "    }\n\n");
 
-        get_equivalent_fields append "n(2) = " + c_rotate90 + "\n"
+
+    r.push_str(         "    fn equivalent_fields(&self, state: State) -> [State; 8] {\n");
+    r.push_str(         "        let mut n = [EMPTY_STATE; 8];\n");
+    r.push_str(         "        n[0] = state;\n");
+
+    let mut pos = 1;
+    for trans in desc.transformations.iter() {
+    r.push_str(&format!("        n[{}] = {};\n", pos, generate_shift_code(&trans)));
+    pos += 1;
     }
 
-    if (is_transformation_valid(rotate270)) {
-        val c_rotate270 = generateCode(rotate270(lookUpTable))
-        get_normalform append "val n270 = " + c_rotate270 + "\n"
-        get_normalform append "if(n270 < n) n = n270\n\n"
+    r.push_str(         "        n\n");
+    r.push_str(         "    }\n");
 
-        get_equivalent_fields append "n(3) = " + c_rotate270 + "\n"
-    }
+    r.push_str(         "}\n");
 
-    if (is_transformation_valid(vflip)) {
-        val c_vflip = generateCode(vflip(lookUpTable))
-        get_normalform append "val v = " + c_vflip + "\n"
-        get_normalform append "if(v < n) n = v\n\n"
-
-        get_equivalent_fields append "n(4) = " + c_vflip + "\n"
-    }
-
-    if (is_transformation_valid(hflip)) {
-        val c_hflip = generateCode(hflip(lookUpTable))
-        get_normalform append "val h = " + c_hflip + "\n"
-        get_normalform append "if(h < n) n = h\n\n"
-
-        get_equivalent_fields append "n(5) = " + c_hflip + "\n"
-    }
-
-    if (is_transformation_valid(vflip_rotate90)) {
-        val c_v90 = generateCode(vflip_rotate90(lookUpTable))
-        get_normalform append "val v90 = " + c_v90 + "\n"
-        get_normalform append "if(v90 < n) n = v90\n\n"
-
-        get_equivalent_fields append "n(6) = " + c_v90 + "\n"
-    }
-
-    if (is_transformation_valid(hflip_rotate90)) {
-        val c_h90 = generateCode(hflip_rotate90(lookUpTable))
-        get_normalform append "val h90 = " + c_h90 + "\n"
-        get_normalform append "if(h90 < n) n = h90\n\n"
-
-        get_equivalent_fields append "n(7) = " + c_h90 + "\n"
-    }
-
-    get_normalform append "n\n"
-    get_normalform append "}\n"
-
-    get_equivalent_fields append "n\n"
-    get_equivalent_fields append "}\n"
-
-    val r = new StringBuilder
-
-    r append "result(0) = new com.googlecode.pegsolitaire.BoardHelper {\n"
-    r append get_normalform.result
-    r append get_equivalent_fields.result
-    r append "}\n"
-
-    r.result
-*/
-    
-    String::new()
+    r
 }
