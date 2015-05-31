@@ -1,19 +1,19 @@
 use board::*;
 
-pub struct Englisch {
+pub struct English {
     desc: Description,
 }
 
-impl Englisch {
-    pub fn new() -> Englisch {
+impl English {
+    pub fn new() -> English {
         use board::MoveDirections::*;
-        Englisch {
-            desc: Description::new("Englisch", "..ooo..\n..ooo..\nooooooo\nooooooo\nooooooo\n..ooo..\n..ooo..", &[Horizontal, Vertical]).unwrap()
+        English {
+            desc: Description::new("English", "..ooo..\n..ooo..\nooooooo\nooooooo\nooooooo\n..ooo..\n..ooo..", &[Horizontal, Vertical]).unwrap()
         }
     }
 }
 
-impl Board for Englisch {
+impl Board for English {
     fn description(&self) -> &Description {
         &self.desc
     }
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_english_board() {
-        let board = Englisch::new();
+        let board = English::new();
         board.description().verify_board(&board);
     }
 

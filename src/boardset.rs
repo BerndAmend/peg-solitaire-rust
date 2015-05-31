@@ -11,7 +11,9 @@ const INITIAL_SIZE: usize = 1 << 5;
 #[derive(Clone)]
 pub struct BoardSet {
     len: usize,
-    data: Vec<State>,
+
+    // TODO remove data by introducing an iterator
+    pub data: Vec<State>,
 }
 
 impl BoardSet {
@@ -115,7 +117,7 @@ impl BoardSet {
         }
     }
 
-    pub fn foreach<F>(&self, func: F) where F: Fn(State) {
+    pub fn foreach<F>(&self, mut func: F) where F: FnMut(State) {
         for x in self.data.iter().filter(|&x| *x != EMPTY_STATE) {
            func(*x);
        }

@@ -170,7 +170,7 @@ impl Description {
 
 
             fn have_same_shape(in1: &Lut, in2: &Lut) -> bool {
-                if (in1.len() != in2.len() || in1[0].len() != in2[0].len()) {
+                if in1.len() != in2.len() || in1[0].len() != in2[0].len() {
                     false
                 } else {
                     for y in 0..in1.len() {
@@ -192,7 +192,7 @@ impl Description {
                         movemask_as_vec.push(v);
                     }
                 }
-    
+
                 let mut add_transformation = |func: &Fn(&Lut) -> Lut| {
                     let x = func(&desc.lut);
                     if have_same_shape(&desc.lut, &x) &&
@@ -258,16 +258,19 @@ impl Description {
         if self.pegs < 64 && state > (1u64 << (self.pegs+1) - 1) {
                 None
         } else {
-            let mut mask = 1u64;
+            let mut pos = self.pegs;
             let mut result = String::with_capacity(self.layout.len());
 
             for x in self.layout.chars() {
                 result.push(match x {
-                    e @ '.' | e @ '\n' => e,
-                    'o' => if state & mask != 0 { 'x' } else { '.' },
-                    x => unreachable!(),
+                    '.' => ' ',
+                    '\n' => '\n',
+                    'o' => {
+                        pos-=1;
+                        if state & (1u64 << pos) != 0 { 'x' } else { '.' }
+                        },
+                    _ => unreachable!(),
                 });
-                mask <<= 1;
             }
 
             Some(result)
@@ -286,10 +289,14 @@ impl Description {
 
         if !self.layout.chars().zip(state.chars()).all(
             |x| match x {
-                (left, right) => match left {
+                (left, right) => {
+                    println!("{} == {}", left, right);
+                    match left {
                     'o' => right == 'x' || right == '.',
                     '.' => right == ' ',
+                    '\n' => right == '\n',
                     _ => false,
+                    }
                 },
             }) {
             return None;
@@ -303,12 +310,14 @@ impl Description {
                 '\n' | ' ' | '\t'  => {},
                 'x' => {result |= 1u64 << pos; pos+=1;},
                 '.' => pos+=1,
-                _ => return None,
+                _ => {
+                    return None
+                    },
             };
         }
 
         if pos > self.pegs {
-           None
+            None
         } else {
             Some(result)
         }
@@ -429,12 +438,24 @@ mod tests {
     #[test]
     fn description_to_string_is_ok_1() {
         assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal]).unwrap().
-            to_string(0b10101_u64).unwrap(), "x.x.x");
+            to_string(0b10100_u64).unwrap(), "x.x..");
     }
 
     #[test]
     fn description_to_string_is_ok_2() {
         assert_eq!(Description::new("test", &(0..64).map(|_| "o").collect::<String>(), &[MoveDirections::Horizontal]).unwrap().to_string(!0u64).unwrap(), (0..64).map(|_| "x").collect::<String>());
+    }
+
+    #[test]
+    fn description_to_string_is_ok_3() {
+        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal]).unwrap().
+            to_string(0b10100_u64).unwrap(), " x.x.. ");
+    }
+
+    #[test]
+    fn description_to_string_is_ok_4() {
+        assert_eq!(Description::new("test", ".ooooo.\n..ooo..\n...o...", &[MoveDirections::Horizontal, MoveDirections::Vertical]).unwrap().
+            to_string(0b101000011_u64).unwrap(), " x.x.. \n  ..x  \n   x   ");
     }
 
     #[test]
@@ -471,6 +492,22 @@ mod tests {
     fn description_from_string_detects_invalid_state_4() {
         assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
             .from_string(" xxx  ").is_none());
+    }
+
+    #[test]
+    fn description_to_string_from_string() {
+        let desc = Description::new("test", "..ooooo.", &[MoveDirections::Horizontal]).unwrap();
+        let v = 0b11010u64;
+        assert_eq!(desc.from_string(&desc.to_string(v).unwrap()).unwrap(), v);
+    }
+
+    #[test]
+    fn description_from_string_to_string() {
+        let desc = Description::new("test", "..ooooo.", &[MoveDirections::Horizontal]).unwrap();
+        let v = "  ..x.x ";
+        let from = desc.from_string(v).unwrap();
+        assert_eq!(from, 0b00101u64);
+        assert_eq!(desc.to_string(from).unwrap(), v);
     }
 
     #[test]
