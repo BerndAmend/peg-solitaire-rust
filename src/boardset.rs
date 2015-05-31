@@ -118,12 +118,12 @@ impl BoardSet {
     pub fn foreach<F>(&self, func: F) where F: Fn(State) {
         for x in self.data.iter().filter(|&x| *x != EMPTY_STATE) {
            func(*x);
-	   }
+       }
     }
 
     fn size_fits_into_capacity(expected: usize, current: usize) -> bool {
         4 * expected < 3 * current
-	}
+    }
 
     fn compute_capacity_for_size(expected: usize, current: usize) -> usize {
         let mut new_capacity = current;
@@ -168,8 +168,8 @@ impl BoardSet {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use ::board::EMPTY_STATE;
+    use super::*;
+    use ::board::EMPTY_STATE;
 
     #[test]
     fn boardset_test() {
