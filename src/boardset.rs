@@ -113,6 +113,16 @@ impl BoardSet {
         self.fast_insert_all(other);
     }
 
+    pub fn insert_all_abort_on_empty_state(&mut self, other: &[State]) {
+        self.reserve(other.len());
+        for x in other {
+            if *x == EMPTY_STATE {
+                break;
+            }
+            self.fast_insert(*x);
+        }
+    }
+
     // add the elements without checking if there is enough space
     pub fn fast_insert_all(&mut self, other: &[State]) {
         for x in other {

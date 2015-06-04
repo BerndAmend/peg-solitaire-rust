@@ -4,6 +4,8 @@ use boardset::*;
 use std::thread;
 use std::sync::mpsc;
 
+const TRANSMIT_SIZE: usize = 1 << 16;
+
 // generated
 const PEGS: usize = 33;
 
@@ -117,7 +119,7 @@ fn equivalent_fields(state: State) -> [State; 8] {
 
 // Solver
 pub fn solve(start: State) -> Vec<BoardSet> {
-    let thread_count = 12;
+    let thread_count = 3;
     assert_eq!(start.count_ones() as usize, PEGS-1);
 
     let mut solution: Vec<_> = vec![];
@@ -136,14 +138,20 @@ pub fn solve(start: State) -> Vec<BoardSet> {
             for slice in current.chunks(current.data_len()/thread_count) {
                 let tx = tx.clone();
                 threads.push(thread::scoped(move || {
-                    let mut next = BoardSet::new();
+                    let mut pos = 0;
+                    let mut next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
 
                     for &field in slice.iter().filter(|&x| *x != EMPTY_STATE) {
-                        next.reserve(SIZE);
                         for i in 0..SIZE {
                             let tmp = field & MOVEMASK[i];
                             if tmp == CHECKMASK1[i] || tmp == CHECKMASK2[i] {
-                                next.fast_insert(normalize(field ^ MOVEMASK[i]));
+                                next[pos] = normalize(field ^ MOVEMASK[i]);
+                                pos += 1;
+                                if pos == TRANSMIT_SIZE {
+                                    tx.send(next).unwrap();
+                                    next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
+                                    pos = 0;
+                                }
                             }
                         }
                     }
@@ -152,13 +160,18 @@ pub fn solve(start: State) -> Vec<BoardSet> {
                 }));
             }
 
-            
-            for _ in 0..threads.len() {
+            let mut remaining = threads.len();
+            loop {
                 let d = rx.recv().unwrap();
-                if next.is_empty() {
-                    next = d;
+
+                if d[TRANSMIT_SIZE-1] == EMPTY_STATE {
+                    next.insert_all_abort_on_empty_state(&*d);
+                    remaining -= 1;
+                    if remaining == 0 {
+                        break;
+                    }
                 } else {
-                    next.merge(&d);
+                    next.insert_all_abort_on_empty_state(&*d);
                 }
             }
         }
