@@ -147,16 +147,19 @@ pub fn solve(start: State) -> Vec<BoardSet> {
                             if tmp == CHECKMASK1[i] || tmp == CHECKMASK2[i] {
                                 next[pos] = normalize(field ^ MOVEMASK[i]);
                                 pos += 1;
-                                if pos == TRANSMIT_SIZE {
-                                    tx.send(next).unwrap();
-                                    next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
-                                    pos = 0;
-                                }
                             }
+                        }
+                        if pos > TRANSMIT_SIZE-SIZE {
+                            tx.send(next).unwrap();
+                            next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
+                            pos = 0;
                         }
                     }
 
                     tx.send(next).unwrap();
+                    if pos != 0 {
+                        tx.send(Box::new([EMPTY_STATE; TRANSMIT_SIZE])).unwrap();
+                    }
                 }));
             }
 
@@ -164,7 +167,7 @@ pub fn solve(start: State) -> Vec<BoardSet> {
             loop {
                 let d = rx.recv().unwrap();
 
-                if d[TRANSMIT_SIZE-1] == EMPTY_STATE {
+                if d[0] == EMPTY_STATE {
                     next.insert_all_abort_on_empty_state(&*d);
                     remaining -= 1;
                     if remaining == 0 {
