@@ -116,11 +116,11 @@ fn equivalent_fields(state: State) -> [State; 8] {
 }
 
 // Solver
-pub fn solve(start: State) -> Vec<BoardSet> {
+pub fn solve(start: State) -> Box<Vec<BoardSet>> {
     let thread_count = 3;
     assert_eq!(start.count_ones() as usize, PEGS-1);
 
-    let mut solution: Vec<_> = vec![];
+    let mut solution: Box<Vec<_>> = Box::new(vec![]);
 
     let mut current = BoardSet::new();
     current.insert(normalize(start));

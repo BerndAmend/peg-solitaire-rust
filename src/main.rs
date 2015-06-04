@@ -45,5 +45,10 @@ fn main() {
 //            println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
 //        });
 
-    boards::solve(8589869055u64);
+    let sol = boards::solve(8589869055u64);
+
+//    let mut guess = String::new();
+//    std::io::stdin().read_line(&mut guess)
+//        .ok()
+//        .expect("Failed to read line");
 }
