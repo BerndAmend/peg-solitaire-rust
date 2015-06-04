@@ -87,7 +87,6 @@ pub fn get_rust_code(desc: &Description) -> String {
     r.push_str(&format_mask("CHECKMASK2", &desc.checkmask2));
 
     r.push_str(         "\n");
-    r.push_str(         "#[warn(dead_code)]");
     r.push_str(         "fn normalize(state: State) -> State {\n");
     r.push_str(         "    let mut n = state;\n");
 
@@ -102,7 +101,6 @@ pub fn get_rust_code(desc: &Description) -> String {
     r.push_str(         "}\n\n");
 
     r.push_str(         "\n");
-    r.push_str(         "#[warn(dead_code)]");
     r.push_str(         "fn equivalent_fields(state: State) -> [State; 8] {\n");
     r.push_str(         "    let mut n = [EMPTY_STATE; 8];\n");
     r.push_str(         "    n[0] = state;\n");

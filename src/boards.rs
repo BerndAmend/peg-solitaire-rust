@@ -29,7 +29,6 @@ static CHECKMASK2: [State; SIZE] = [3221225472u64, 553648128u64, 276824064u64, 1
                             24576u64, 264u64, 3072u64, 1536u64, 768u64, 36u64, 384u64, 18u64, 192u64, 
                             9u64, 24u64, 3u64];
 
-#[warn(dead_code)]
 fn normalize(state: State) -> State {
     let mut n = state;
     let p0 = (state & 8128u64) << 14 | (state & 1040384u64) | (state & 133169152u64) >> 14 | (state & 7516192768u64) >> 30
@@ -76,7 +75,6 @@ fn normalize(state: State) -> State {
     n
 }
 
-#[warn(dead_code)]
 fn equivalent_fields(state: State) -> [State; 8] {
     let mut n = [EMPTY_STATE; 8];
     n[0] = state;
@@ -187,7 +185,6 @@ pub fn solve(start: State) -> Vec<BoardSet> {
     solution
 }
 
-#[warn(dead_code)]
 pub fn possible_start_fields() -> BoardSet {
     let mut set = BoardSet::with_capacity(PEGS);
 
