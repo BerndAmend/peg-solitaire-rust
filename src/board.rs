@@ -1,4 +1,5 @@
 use std;
+use boardset::BoardSet;
 
 /// current state of a board
 pub type State = u64;
@@ -25,12 +26,6 @@ pub enum DescriptionError {
     NoMoveDirections,
     NoMovesPossible,
     InvalidLayout
-}
-
-pub trait Board {
-    fn description(&self) -> &Description;
-    fn normalize(&self, state: State) -> State;
-    fn equivalent_fields(&self, state: State) -> [State; 8];
 }
 
 #[derive(Debug)]
@@ -207,11 +202,11 @@ impl Description {
                             transformations.push(x);
                         }
                 };
-    
+
                 add_transformation(&vertical_flip);
                 add_transformation(&horizontal_flip);
                 add_transformation(&|lut: &Lut| horizontal_flip(&vertical_flip(&lut)));
-    
+
                 // if transpose is possible
                 if desc.lut.len() == desc.lut[0].len() {
                     add_transformation(&transpose);
@@ -362,22 +357,22 @@ impl Description {
     /// let board = European::new();
     /// assert!(board.description().verify_board(board));
     /// ```
-    pub fn verify_board(&self, board: &Board) {
-        for mask in self.movemask.iter() {
-            let eq_fields = board.equivalent_fields(*mask);
-
-            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
-
-            // check if the eq_fields are also valid move masks
-            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
-                assert!(self.movemask.contains(v));
-            }
-
-            // check if the mask is in the eq_fields list
-            assert!(board.equivalent_fields(*mask).contains(mask));
-
-            // normalize
-        }
+    pub fn verify_board(&self) { //, board: &Board) {
+//        for mask in self.movemask.iter() {
+//            let eq_fields = board.equivalent_fields(*mask);
+//
+//            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
+//
+//            // check if the eq_fields are also valid move masks
+//            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
+//                assert!(self.movemask.contains(v));
+//            }
+//
+//            // check if the mask is in the eq_fields list
+//            assert!(board.equivalent_fields(*mask).contains(mask));
+//
+//            // normalize
+//        }
     }
 }
 

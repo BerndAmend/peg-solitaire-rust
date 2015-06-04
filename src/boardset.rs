@@ -1,4 +1,5 @@
 use std;
+use std::slice::Chunks;
 use board::State;
 use board::EMPTY_STATE;
 
@@ -12,8 +13,7 @@ const INITIAL_SIZE: usize = 1 << 5;
 pub struct BoardSet {
     len: usize,
 
-    // TODO remove data by introducing an iterator
-    pub data: Vec<State>,
+    data: Vec<State>,
 }
 
 impl BoardSet {
@@ -46,6 +46,11 @@ impl BoardSet {
             new_obj.fast_insert_all(&self.data);
         }
         replace(&mut self.data, new_obj.data);
+    }
+
+    /// Returns the size of the internal array
+    pub fn data_len(&self) -> usize {
+        self.data.len()
     }
 
     /// Returns the number of elements in the set.
@@ -122,6 +127,10 @@ impl BoardSet {
            func(*x);
        }
     }
+    
+    pub fn chunks(&self, size: usize) -> Chunks<State> {
+        self.data.chunks(size)
+    }
 
     fn size_fits_into_capacity(expected: usize, current: usize) -> bool {
         4 * expected < 3 * current
@@ -135,19 +144,14 @@ impl BoardSet {
         new_capacity
     }
 
-    fn get_index(&self, value: u32) -> usize {
-        let mut h = value;
-        // Copied from Apache's AbstractHashedMap; prevents power-of-two collisions.
-        h = h.wrapping_add(!(h << 9));
-        h ^= h >> 14;
-        h = h.wrapping_add(h << 4);
-        h ^= h >> 10;
-        // Power of two trick.
-        (h & (self.data.len()-1) as u32) as usize
-    }
-
     fn get_index_from_state(&self, value: State) -> usize {
-        self.get_index((value ^ (value >> 32)) as u32)
+        let mut h = value;
+//        h ^= h >> 16;
+        h *= 0x85ebca6b;
+        h ^= h >> 13;
+//        h *= 0xc2b2ae35;
+//        h ^= h >> 16;
+        (h & (self.data.len()-1) as u64) as usize 
     }
 
     /// Returns the index in the table at which a particular item resides, or the
@@ -209,7 +213,9 @@ mod tests {
         let mut y = BoardSet::new();
         x.insert_all(&[1,2,3,4,5]);
         y.insert_all(&[1,2,3,4,5]);
+        x.merge(&y);
         x.foreach(|i| assert!(i > 0 && i <= 5));
+        assert_eq!(x.len(), 5);
     }
 
     #[test]
@@ -218,6 +224,8 @@ mod tests {
         let mut y = BoardSet::new();
         x.insert_all(&[1,2,3,4,5]);
         y.insert_all(&vec![6,7,8,9,10]);
+        x.merge(&y);
         x.foreach(|i| assert!(i > 0 && i <= 10));
+        assert_eq!(x.len(), 10);
     }
 }
