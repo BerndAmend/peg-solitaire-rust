@@ -1,6 +1,7 @@
 use board::*;
 use boardset::*;
 
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::sync::mpsc;
 
@@ -116,18 +117,18 @@ fn equivalent_fields(state: State) -> [State; 8] {
 }
 
 // Solver
-pub fn solve(start: State) -> Box<Vec<BoardSet>> {
+pub fn solve(start: State) -> Box<Vec<Box<BoardSet>>> {
     let thread_count = 3;
     assert_eq!(start.count_ones() as usize, PEGS-1);
 
-    let mut solution: Box<Vec<_>> = Box::new(vec![]);
+    let mut solution: Box<Vec<Box<BoardSet>>> = Box::new(vec![]);
 
-    let mut current = BoardSet::new();
+    let mut current = Box::new(BoardSet::new());
     current.insert(normalize(start));
 
     while !current.is_empty() {
         print!("search fields with {} removed pegs", solution.len()+2);
-        let mut next = BoardSet::new();
+        let mut next = Box::new(BoardSet::new());
         {
             //io::stdout().flush();
             let (tx, rx) = mpsc::channel();
