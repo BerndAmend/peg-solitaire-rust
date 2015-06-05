@@ -117,7 +117,7 @@ fn equivalent_fields(state: State) -> [State; 8] {
 
 // Solver
 pub fn solve(start: State) -> Box<Vec<Arc<RwLock<Box<BoardSet>>>>> {
-    let thread_count = 3;
+    let thread_count = 4;
     assert_eq!(start.count_ones() as usize, PEGS-1);
 
     let mut solution: Box<Vec<Arc<RwLock<Box<BoardSet>>>>> = Box::new(vec![]);

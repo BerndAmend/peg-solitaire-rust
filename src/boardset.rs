@@ -156,6 +156,7 @@ impl BoardSet {
 
     fn get_index_from_state(&self, value: State) -> usize {
         let mut h = value;
+        // modified MurmurHash3
 //        h ^= h >> 16;
         h *= 0x85ebca6b;
         h ^= h >> 13;
