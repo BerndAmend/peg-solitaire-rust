@@ -158,7 +158,7 @@ impl BoardSet {
         let mut h = value;
         // modified MurmurHash3
 //        h ^= h >> 16;
-        h *= 0x85ebca6b;
+        h = h.wrapping_mul(0x85ebca6b);
         h ^= h >> 13;
 //        h *= 0xc2b2ae35;
 //        h ^= h >> 16;
