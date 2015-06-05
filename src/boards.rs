@@ -1,11 +1,10 @@
 use board::*;
 use boardset::*;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
-use std::sync::mpsc;
 
-const TRANSMIT_SIZE: usize = 1 << 16;
+const TRANSMIT_SIZE: usize = 1 << 17;
 
 // generated
 const PEGS: usize = 33;
@@ -117,70 +116,64 @@ fn equivalent_fields(state: State) -> [State; 8] {
 }
 
 // Solver
-pub fn solve(start: State) -> Box<Vec<Box<BoardSet>>> {
+pub fn solve(start: State) -> Box<Vec<Arc<RwLock<Box<BoardSet>>>>> {
     let thread_count = 3;
     assert_eq!(start.count_ones() as usize, PEGS-1);
 
-    let mut solution: Box<Vec<Box<BoardSet>>> = Box::new(vec![]);
+    let mut solution: Box<Vec<Arc<RwLock<Box<BoardSet>>>>> = Box::new(vec![]);
 
-    let mut current = Box::new(BoardSet::new());
-    current.insert(normalize(start));
+    let mut current = Arc::new(RwLock::new(Box::new(BoardSet::new())));
+    current.write().unwrap().insert(normalize(start));
 
-    while !current.is_empty() {
+    while !current.read().unwrap().is_empty() {
         print!("search fields with {} removed pegs", solution.len()+2);
-        let mut next = Box::new(BoardSet::new());
+        let next = Arc::new(RwLock::new(Box::new(BoardSet::new())));
         {
-            //io::stdout().flush();
-            let (tx, rx) = mpsc::channel();
-
+            let cur = current.read().unwrap();
             let mut threads = Vec::new();
-            for slice in current.chunks(current.data_len()/thread_count) {
-                let tx = tx.clone();
+            for slice in cur.chunks(cur.data_len()/thread_count) {
+                let next = next.clone();
                 threads.push(thread::scoped(move || {
                     let mut pos = 0;
-                    let mut next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
+                    let mut tmp = [EMPTY_STATE; TRANSMIT_SIZE];
 
                     for &field in slice.iter().filter(|&x| *x != EMPTY_STATE) {
                         for i in 0..SIZE {
-                            let tmp = field & MOVEMASK[i];
-                            if tmp == CHECKMASK1[i] || tmp == CHECKMASK2[i] {
-                                next[pos] = normalize(field ^ MOVEMASK[i]);
+                            let v = field & MOVEMASK[i];
+                            if v == CHECKMASK1[i] || v == CHECKMASK2[i] {
+                                tmp[pos] = normalize(field ^ MOVEMASK[i]);
                                 pos += 1;
                             }
                         }
-                        if pos > TRANSMIT_SIZE-SIZE {
-                            tx.send(next).unwrap();
-                            next = Box::new([EMPTY_STATE; TRANSMIT_SIZE]);
-                            pos = 0;
+
+                        if pos/3 > TRANSMIT_SIZE/4 {
+                            match next.try_write() {
+                                Ok(mut t) => {
+                                    t.insert_all_abort_on_empty_state(&tmp);
+                                    tmp = [EMPTY_STATE; TRANSMIT_SIZE];
+                                    pos = 0;
+                                },
+                                Err(_) => {
+                                    if pos > TRANSMIT_SIZE-SIZE {
+                                        let mut t = next.write().unwrap();
+                                        t.insert_all_abort_on_empty_state(&tmp);
+                                        tmp = [EMPTY_STATE; TRANSMIT_SIZE];
+                                        pos = 0;
+                                    }
+                                },
+                            };
                         }
                     }
 
-                    tx.send(next).unwrap();
-                    if pos != 0 {
-                        tx.send(Box::new([EMPTY_STATE; TRANSMIT_SIZE])).unwrap();
-                    }
+                    let mut t = next.write().unwrap();
+                    t.insert_all_abort_on_empty_state(&tmp);
                 }));
-            }
-
-            let mut remaining = threads.len();
-            loop {
-                let d = rx.recv().unwrap();
-
-                if d[0] == EMPTY_STATE {
-                    next.insert_all_abort_on_empty_state(&*d);
-                    remaining -= 1;
-                    if remaining == 0 {
-                        break;
-                    }
-                } else {
-                    next.insert_all_abort_on_empty_state(&*d);
-                }
             }
         }
 
-        println!(", found {} fields", next.len());
         solution.push(current);
         current = next;
+        println!(", found {} fields", current.read().unwrap().len());
     }
 
     solution
