@@ -16,6 +16,29 @@ pub struct BoardSet {
     data: Vec<State>,
 }
 
+#[derive(Debug)]
+pub struct BoardSetInfo {
+    pub len: usize,
+    pub average: f64,
+    pub one_access: f64,
+    pub max_access: usize,
+    pub collisions: f64,
+    pub max_collisions: usize,
+}
+
+impl BoardSetInfo {
+    pub fn new() -> BoardSetInfo {
+        BoardSetInfo {
+            len: 0,
+            average: 0.0,
+            one_access: 0.0,
+            max_access: 0,
+            collisions: 0.0,
+            max_collisions: 0
+        }
+    }
+}
+
 impl BoardSet {
     pub fn new() -> BoardSet {
         BoardSet::with_capacity(0)
@@ -180,6 +203,44 @@ impl BoardSet {
                 index = (index + 1) & (self.data.len()-1);
             }
         }
+    }
+
+    pub fn get_info(&self) -> BoardSetInfo {
+        let mut collisions = std::collections::HashMap::new();
+        let mut info = BoardSetInfo::new();
+        info.len = self.len();
+
+        let mut index = 0;
+        let mut count = 0; // current element position in hashset
+        while index < self.data.len() {
+            let v = self.data[index];
+            let designated_index = self.get_index_from_state(v); // where the element should be
+
+            if v != EMPTY_STATE {
+                let mut d = 1;
+                if index == designated_index {
+                    info.one_access += 1.0;
+                } else if designated_index < index {
+                    d += index - designated_index;
+                } else {
+                    d += index + (self.data.len() - designated_index);
+                }
+
+                let collision_counter = collisions.entry(designated_index).or_insert(0);
+                *collision_counter += 1;
+
+                info.max_access = std::cmp::max(info.max_access, d);
+                info.average = (info.average*(count as f64) + (d as f64)) / (count+1) as f64;
+                count += 1;
+            }
+            index += 1;
+        }
+
+        info.one_access /= self.len() as f64;
+        info.collisions = 1.0 - collisions.len() as f64 / self.len() as f64;
+        info.max_collisions = collisions.iter().fold(0, |x, y| std::cmp::max(x, *y.1));
+
+        info
     }
 }
 

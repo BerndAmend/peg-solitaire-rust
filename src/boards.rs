@@ -174,6 +174,7 @@ pub fn solve(start: State) -> Box<Vec<Arc<RwLock<Box<BoardSet>>>>> {
         solution.push(current);
         current = next;
         println!(", found {} fields", current.read().unwrap().len());
+        //println!(", found {:?}", current.read().unwrap().get_info());
     }
 
     solution
