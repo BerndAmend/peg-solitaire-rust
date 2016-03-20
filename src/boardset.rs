@@ -13,7 +13,7 @@ const INITIAL_SIZE: usize = 1 << 5;
 pub struct BoardSet {
     len: usize,
 
-    data: Vec<State>,
+    pub data: Vec<State>,
 }
 
 #[derive(Debug)]
@@ -182,12 +182,12 @@ impl BoardSet {
     fn get_index_from_state(&self, value: State) -> usize {
         let mut h = value;
         // modified MurmurHash3
-//        h ^= h >> 16;
+        //        h ^= h >> 16;
         h = h.wrapping_mul(0x85ebca6b);
         h ^= h >> 13;
-//        h *= 0xc2b2ae35;
-//        h ^= h >> 16;
-        (h & (self.data.len()-1) as u64) as usize 
+        //        h *= 0xc2b2ae35;
+        //        h ^= h >> 16;
+        (h & (self.data.len() - 1) as u64) as usize
     }
 
     /// Returns the index in the table at which a particular item resides, or the

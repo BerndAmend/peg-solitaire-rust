@@ -87,7 +87,7 @@ impl Description {
             return Err(DescriptionError::TooManyPegs);
         }
 
-        let mut lines = layout.lines_any();
+        let mut lines = layout.lines();
         let len = lines.next().unwrap().len();
         if !lines.all(|x| x.len() == len) {
             return Err(DescriptionError::LineLengthNotEqual);
@@ -95,9 +95,20 @@ impl Description {
 
         desc.lut = {
             let mut pos = desc.pegs as i32;
-            layout.lines_any().map(|line|     
-                line.chars().map(|x| if x == 'o' { pos -= 1; pos } else { -1 }).collect()
-            ).collect()
+            layout.lines()
+                  .map(|line| {
+                      line.chars()
+                          .map(|x| {
+                              if x == 'o' {
+                                  pos -= 1;
+                                  pos
+                              } else {
+                                  -1
+                              }
+                          })
+                          .collect()
+                  })
+                  .collect()
         };
 
         // calculate the 3 required bit masks, to detect if a move is possible and to execute it
@@ -113,16 +124,23 @@ impl Description {
 
                     for dir in desc.directions.iter() {
                         let (valid, x1, y1, x2, y2) = match *dir {
-                            MoveDirections::Horizontal    => (true, x+1, y  , x+2, y  ),
-                            MoveDirections::Vertical      => (true, x  , y+1, x  , y+2),
-                            MoveDirections::LeftDiagonal  => (true, x+1, y+1, x+2, y+2),
-                            MoveDirections::RightDiagonal => if x > 2 { (true, x-1, y+1, x-2, y+2) } else { (false, 0, 0, 0, 0) },
+                            MoveDirections::Horizontal => (true, x + 1, y, x + 2, y),
+                            MoveDirections::Vertical => (true, x, y + 1, x, y + 2),
+                            MoveDirections::LeftDiagonal => (true, x + 1, y + 1, x + 2, y + 2),
+                            MoveDirections::RightDiagonal => {
+                                if x > 2 {
+                                    (true, x - 1, y + 1, x - 2, y + 2)
+                                } else {
+                                    (false, 0, 0, 0, 0)
+                                }
+                            }
                         };
 
-                        if valid &&
-                           x1 < x_max && y1 < y_max && lut[y1][x1] != -1 &&
-                           x2 < x_max && y2 < y_max && lut[y2][x2] != -1 {
-                            desc.movemask.push(((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2])));
+                        if valid && x1 < x_max && y1 < y_max && lut[y1][x1] != -1 &&
+                           x2 < x_max && y2 < y_max &&
+                           lut[y2][x2] != -1 {
+                            desc.movemask.push(((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) |
+                                                (1u64 << lut[y2][x2])));
                             desc.checkmask1.push(((1u64 << lut[y][x]) | (1u64 << lut[y1][x1])));
                             desc.checkmask2.push(((1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2])));
                         }
@@ -158,11 +176,13 @@ impl Description {
             }
 
             fn horizontal_flip(lut: &Lut) -> Lut {
-                lut.iter().map(|x| { 
-                    let mut r = x.clone();
-                    r.reverse();
-                    r
-                }).collect()
+                lut.iter()
+                   .map(|x| {
+                       let mut r = x.clone();
+                       r.reverse();
+                       r
+                   })
+                   .collect()
             }
 
 
@@ -193,16 +213,15 @@ impl Description {
                 let mut add_transformation = |func: &Fn(&Lut) -> Lut| {
                     let x = func(&desc.lut);
                     if have_same_shape(&desc.lut, &x) &&
-                        movemask_as_vec.iter().all(|i| {
-                            if let Some(trans) = desc.from_vec(func(i)) {
-                                desc.movemask.contains(&trans)
-                            } else {
-                                false
-                            }
-                        })
-                        {
-                            transformations.push(x);
+                       movemask_as_vec.iter().all(|i| {
+                        if let Some(trans) = desc.from_vec(func(i)) {
+                            desc.movemask.contains(&trans)
+                        } else {
+                            false
                         }
+                    }) {
+                        transformations.push(x);
+                    }
                 };
 
                 add_transformation(&vertical_flip);
@@ -214,7 +233,9 @@ impl Description {
                     add_transformation(&transpose);
                     add_transformation(&|lut: &Lut| vertical_flip(&transpose(&lut)));
                     add_transformation(&|lut: &Lut| horizontal_flip(&transpose(&lut)));
-                    add_transformation(&|lut: &Lut| horizontal_flip(&vertical_flip(&transpose(&lut))));
+                    add_transformation(&|lut: &Lut| {
+                        horizontal_flip(&vertical_flip(&transpose(&lut)))
+                    });
                 }
             }
 
@@ -252,8 +273,8 @@ impl Description {
     /// creates a human-readable version of a field, the output as described by the layout
     /// returns None if state was invalid
     pub fn to_string(&self, state: State) -> Option<String> {
-        if self.pegs < 64 && state > (1u64 << (self.pegs+1) - 1) {
-                None
+        if self.pegs < 64 && state > (1u64 << (self.pegs + 1) - 1) {
+            None
         } else {
             let mut pos = self.pegs;
             let mut result = String::with_capacity(self.layout.len());
@@ -263,9 +284,13 @@ impl Description {
                     '.' => ' ',
                     '\n' => '\n',
                     'o' => {
-                        pos-=1;
-                        if state & (1u64 << pos) != 0 { 'x' } else { '.' }
-                        },
+                        pos -= 1;
+                        if state & (1u64 << pos) != 0 {
+                            'x'
+                        } else {
+                            '.'
+                        }
+                    }
                     _ => unreachable!(),
                 });
             }
@@ -284,18 +309,19 @@ impl Description {
             return None;
         }
 
-        if !self.layout.chars().zip(state.chars()).all(
-            |x| match x {
+        if !self.layout.chars().zip(state.chars()).all(|x| {
+            match x {
                 (left, right) => {
                     println!("{} == {}", left, right);
                     match left {
-                    'o' => right == 'x' || right == '.',
-                    '.' => right == ' ',
-                    '\n' => right == '\n',
-                    _ => false,
+                        'o' => right == 'x' || right == '.',
+                        '.' => right == ' ',
+                        '\n' => right == '\n',
+                        _ => false,
                     }
-                },
-            }) {
+                }
+            }
+        }) {
             return None;
         }
 
@@ -304,12 +330,13 @@ impl Description {
                 return None;
             }
             match x {
-                '\n' | ' ' | '\t'  => {},
-                'x' => {result |= 1u64 << pos; pos+=1;},
-                '.' => pos+=1,
-                _ => {
-                    return None
-                    },
+                '\n' | ' ' | '\t' => {}
+                'x' => {
+                    result |= 1u64 << pos;
+                    pos += 1;
+                }
+                '.' => pos += 1,
+                _ => return None,
             };
         }
 
@@ -322,22 +349,27 @@ impl Description {
 
     /// blocked fields get -1, empty fields get 0, used fields 1
     pub fn to_vec(&self, state: State) -> Option<Lut> {
-       if self.pegs < 64 && state > (1u64 << (self.pegs+1) - 1) {
-                None
+        if self.pegs < 64 && state > (1u64 << (self.pegs + 1) - 1) {
+            None
         } else {
-            Some(self.lut.iter().map(|o| {
-                    o.iter().map(|&x| {
-                            if x == -1 {
-                                -1i32
-                            } else {
-                                if (state & (1u64 << x)) == 0 {
-                                    0i32
-                                } else {
-                                    1i32
-                                }
-                            }
-                    }).collect()
-                }).collect())
+            Some(self.lut
+                     .iter()
+                     .map(|o| {
+                         o.iter()
+                          .map(|&x| {
+                              if x == -1 {
+                                  -1i32
+                              } else {
+                                  if (state & (1u64 << x)) == 0 {
+                                      0i32
+                                  } else {
+                                      1i32
+                                  }
+                              }
+                          })
+                          .collect()
+                     })
+                     .collect())
         }
     }
 
@@ -345,37 +377,49 @@ impl Description {
         let mut r = EMPTY_STATE;
         for y in 0..state.len() {
             for x in 0..state[0].len() {
-                if state[y][x] == 1 {
-                    r |= 1u64 << self.lut[y][x];
+                match state[y][x] {
+                    1 => r |= 1u64 << self.lut[y][x],
+                    0 => {
+                        if self.lut[y][x] == -1 {
+                            return None;
+                        }
+                    }
+                    -1 => {
+                        if self.lut[y][x] != -1 {
+                            return None;
+                        }
+                    }
+                    _ => return None,
                 }
             }
         }
         Some(r)
     }
 
-    /// verifies that the Board fulfills all requirements
-    /// how can this be done without static_dispatch without breaking
-    /// ```
-    /// let board = European::new();
-    /// assert!(board.description().verify_board(board));
-    /// ```
-    pub fn verify_board(&self) { //, board: &Board) {
-//        for mask in self.movemask.iter() {
-//            let eq_fields = board.equivalent_fields(*mask);
-//
-//            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
-//
-//            // check if the eq_fields are also valid move masks
-//            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
-//                assert!(self.movemask.contains(v));
-//            }
-//
-//            // check if the mask is in the eq_fields list
-//            assert!(board.equivalent_fields(*mask).contains(mask));
-//
-//            // normalize
-//        }
-    }
+//    /// verifies that the Board fulfills all requirements
+//    /// how can this be done without static_dispatch without breaking
+//    /// ```
+//    /// let board = European::new();
+//    /// assert!(board.description().verify_board(board));
+//    /// ```
+//    pub fn verify_board(&self) {
+//        // , board: &Board) {
+//        //        for mask in self.movemask.iter() {
+//        //            let eq_fields = board.equivalent_fields(*mask);
+//        //
+//        //            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
+//        //
+//        //            // check if the eq_fields are also valid move masks
+//        //            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
+//        //                assert!(self.movemask.contains(v));
+//        //            }
+//        //
+//        //            // check if the mask is in the eq_fields list
+//        //            assert!(board.equivalent_fields(*mask).contains(mask));
+//        //
+//        //            // normalize
+//        //        }
+//    }
 }
 
 #[cfg(test)]

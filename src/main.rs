@@ -1,54 +1,65 @@
-#![feature(scoped)]
-
 mod board;
 mod boardset;
 mod boards;
 mod generator;
 
 fn main() {
-    println!("peg-solitaire rust edition");
+    println!("peg-solitaire rust edition
+Copyright (C) 2015-2016 Bernd Amend <berndamend+pegsolitaire@googlemail.com>
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3 as published by
+the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
 
-    let descriptions = [board::Description::new("English", "..ooo..\n\
-                                        ..ooo..\n\
-                                        ooooooo\n\
-                                        ooooooo\n\
-                                        ooooooo\n\
-                                        ..ooo..\n\
-                                        ..ooo..",
-                                        &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
-                    board::Description::new("European", "..ooo..\n\
-                                        .ooooo.\n\
-                                        ooooooo\n\
-                                        ooooooo\n\
-                                        ooooooo\n\
-                                        .ooooo.\n\
-                                        ..ooo..",
-                                        &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
-                    board::Description::new("Holes15", "o....\n\
-                                       oo...\n\
-                                       ooo..\n\
-                                       oooo.\n\
-                                       ooooo",
-                                       &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical, board::MoveDirections::LeftDiagonal, board::MoveDirections::RightDiagonal]).unwrap()
-                    ];
+    match std::env::args().nth(1) {
+        None => {
+            println!("usage {}", std::env::args().nth(0).unwrap());
+            println!("  solve_eng");
+            println!("  solve_eng_par");
+            println!("  all");
+        },
+        Some(str) => match str.as_ref() {
+            "solve_eng" => {
+                boards::solve(8589869055u64);
+            },
+            "solve_eng_par" => {
+                boards::solve_parallel(8589869055u64);
+            },
+            "all" => {
+                let descriptions = [board::Description::new("English", "..ooo..\n\
+                                                    ..ooo..\n\
+                                                    ooooooo\n\
+                                                    ooooooo\n\
+                                                    ooooooo\n\
+                                                    ..ooo..\n\
+                                                    ..ooo..",
+                                                    &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
+                                board::Description::new("European", "..ooo..\n\
+                                                    .ooooo.\n\
+                                                    ooooooo\n\
+                                                    ooooooo\n\
+                                                    ooooooo\n\
+                                                    .ooooo.\n\
+                                                    ..ooo..",
+                                                    &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
+                                board::Description::new("Holes15", "o....\n\
+                                                   oo...\n\
+                                                   ooo..\n\
+                                                   oooo.\n\
+                                                   ooooo",
+                                                   &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical, board::MoveDirections::LeftDiagonal, board::MoveDirections::RightDiagonal]).unwrap()
+                                ];
 
-//    for x in descriptions.iter() {
-//        println!("{}", generator::get_rust_code(&x));
-//    }
+                for x in descriptions.iter() {
+                    println!("//Name: {}\n{}", x.name, generator::get_rust_code(&x));
+                }
+                // let desc = &descriptions[0];
 
-    let desc = &descriptions[0];
-
-    //println!("{}", generator::get_rust_code(&desc));
-
-//    let start_fields = boards::possible_start_fields();
-//    start_fields.foreach(|x| {
-//            println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
-//        });
-
-    let sol = boards::solve(8589869055u64);
-
-//    let mut guess = String::new();
-//    std::io::stdin().read_line(&mut guess)
-//        .ok()
-//        .expect("Failed to read line");
+                // let start_fields = boards::possible_start_fields();
+                // start_fields.foreach(|x| {
+                //		println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
+                //  });
+            }
+            _ => {},
+        },
+    }
 }

@@ -1,4 +1,12 @@
 [root]
 name = "peg_solitaire"
 version = "0.0.1"
+dependencies = [
+ "thread-scoped 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "thread-scoped"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 

@@ -1,9 +1,4 @@
 use board::*;
-//use std::fs::File;
-//use std::io::prelude::*;
-
-//let mut f = try!(File::create("foo.txt"));
-//try!(f.write_all(b"Hello, world!"));
 
 fn generate_shift_code(transformation: &Transformation) -> String {
     let mut result = String::new();
@@ -53,7 +48,7 @@ fn format_mask(name: &str, vec: &Vec<State>) -> String {
     let mut line = String::new();
 
     let mut pos = 0;
-    line.push_str(&format!("static {}: [State; SIZE] = [", &name));
+    line.push_str(&format!("const {}: [State; SIZE] = [", &name));
     for i in vec.iter() {
         line.push_str(&format!("{}u64", i));
 
@@ -86,24 +81,23 @@ pub fn get_rust_code(desc: &Description) -> String {
     r.push_str(&format_mask("CHECKMASK1", &desc.checkmask1));
     r.push_str(&format_mask("CHECKMASK2", &desc.checkmask2));
 
-    r.push_str(         "\n");
-    r.push_str(         "fn normalize(state: State) -> State {\n");
-    r.push_str(         "    let mut n = state;\n");
+    r.push_str("\n");
+    r.push_str("fn normalize(state: State) -> State {\n");
+    r.push_str("    use std::cmp::min;\n");
 
     let mut pos = 0;
     for trans in desc.transformations.iter() {
         r.push_str(&format!("    let p{} = {};\n", pos, generate_shift_code(&trans)));
-        r.push_str(&format!("    if p{} < n {{ n = p{}; }}\n", pos, pos));
         pos += 1;
     }
 
-    r.push_str(         "    n\n");
-    r.push_str(         "}\n\n");
+    r.push_str("    min(min(min(state,p0), min(p1, p2)), min(min(p3, p4), min(p5, p6)))\n");
+    r.push_str("}\n\n");
 
-    r.push_str(         "\n");
-    r.push_str(         "fn equivalent_fields(state: State) -> [State; 8] {\n");
-    r.push_str(         "    let mut n = [EMPTY_STATE; 8];\n");
-    r.push_str(         "    n[0] = state;\n");
+    r.push_str("\n");
+    r.push_str("fn equivalent_fields(state: State) -> [State; 8] {\n");
+    r.push_str("    let mut n = [EMPTY_STATE; 8];\n");
+    r.push_str("    n[0] = state;\n");
 
     let mut pos = 1;
     for trans in desc.transformations.iter() {
@@ -111,8 +105,8 @@ pub fn get_rust_code(desc: &Description) -> String {
         pos += 1;
     }
 
-    r.push_str(         "    n\n");
-    r.push_str(         "}\n");
+    r.push_str("    n\n");
+    r.push_str("}\n");
 
     r
 }

@@ -1,9 +1,10 @@
 [package]
-
 name = "peg_solitaire"
 version = "0.0.1"
 authors = [ "Bernd Amend <berndamend+pegsolitaire@gmail.com>" ]
 
 [[bin]]
-
 name = "peg_solitaire"
+
+[dependencies]
+thread-scoped = "1.0"
