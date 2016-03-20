@@ -1,5 +1,4 @@
 use std;
-use boardset::BoardSet;
 
 /// current state of a board
 pub type State = u64;
@@ -14,7 +13,7 @@ pub enum MoveDirections {
     Horizontal,
     Vertical,
     LeftDiagonal,
-    RightDiagonal
+    RightDiagonal,
 }
 
 #[derive(Debug, PartialEq)]
@@ -25,7 +24,7 @@ pub enum DescriptionError {
     LineLengthNotEqual,
     NoMoveDirections,
     NoMovesPossible,
-    InvalidLayout
+    InvalidLayout,
 }
 
 #[derive(Debug)]
@@ -48,11 +47,14 @@ pub struct Description {
     /// ...011... required to check if a move is possible
     pub checkmask2: Vec<State>,
 
-    pub transformations: Vec<Transformation>
+    pub transformations: Vec<Transformation>,
 }
 
 impl Description {
-    pub fn new(name: &str, layout: &str, directions: &[MoveDirections]) -> Result<Description, DescriptionError> {
+    pub fn new(name: &str,
+               layout: &str,
+               directions: &[MoveDirections])
+               -> Result<Description, DescriptionError> {
         if name.is_empty() {
             return Err(DescriptionError::NoName);
         }
@@ -74,8 +76,8 @@ impl Description {
             movemask: vec![],
             checkmask1: vec![],
             checkmask2: vec![],
-            transformations: vec![]
-            };
+            transformations: vec![],
+        };
 
         if desc.pegs < 3 {
             return Err(DescriptionError::NotEnoughPegs);
@@ -382,37 +384,47 @@ mod tests {
 
     #[test]
     fn description_has_no_name() {
-        assert_eq!(Description::new("", "ooo", &[MoveDirections::Horizontal]).err(), Some(DescriptionError::NoName));
+        assert_eq!(Description::new("", "ooo", &[MoveDirections::Horizontal]).err(),
+                   Some(DescriptionError::NoName));
     }
 
     #[test]
     fn description_has_not_enough_pegs() {
-        assert_eq!(Description::new("test", "o", &[MoveDirections::Horizontal]).err(), Some(DescriptionError::NotEnoughPegs));
+        assert_eq!(Description::new("test", "o", &[MoveDirections::Horizontal]).err(),
+                   Some(DescriptionError::NotEnoughPegs));
     }
 
     #[test]
     fn description_has_no_move_directions() {
-        assert_eq!(Description::new("test", "ooo", &[]).err(), Some(DescriptionError::NoMoveDirections));
+        assert_eq!(Description::new("test", "ooo", &[]).err(),
+                   Some(DescriptionError::NoMoveDirections));
     }
 
     #[test]
     fn description_too_many_pegs() {
-        assert_eq!(Description::new("test", &(0..65).map(|_| "o").collect::<String>(), &[MoveDirections::Horizontal]).err(), Some(DescriptionError::TooManyPegs));
+        assert_eq!(Description::new("test",
+                                    &(0..65).map(|_| "o").collect::<String>(),
+                                    &[MoveDirections::Horizontal])
+                       .err(),
+                   Some(DescriptionError::TooManyPegs));
     }
 
     #[test]
     fn description_line_length_not_equal() {
-        assert_eq!(Description::new("test", "oo\nooo", &[MoveDirections::Horizontal]).err(), Some(DescriptionError::LineLengthNotEqual));
+        assert_eq!(Description::new("test", "oo\nooo", &[MoveDirections::Horizontal]).err(),
+                   Some(DescriptionError::LineLengthNotEqual));
     }
 
     #[test]
     fn description_no_moves_possible() {
-        assert_eq!(Description::new("test", "ooo", &[MoveDirections::Vertical]).err(), Some(DescriptionError::NoMovesPossible));
+        assert_eq!(Description::new("test", "ooo", &[MoveDirections::Vertical]).err(),
+                   Some(DescriptionError::NoMovesPossible));
     }
 
     #[test]
     fn description_invalid_layout_is_detected() {
-        assert_eq!(Description::new("test", " .ooo", &[MoveDirections::Horizontal]).err(), Some(DescriptionError::InvalidLayout));
+        assert_eq!(Description::new("test", " .ooo", &[MoveDirections::Horizontal]).err(),
+                   Some(DescriptionError::InvalidLayout));
     }
 
     #[test]
@@ -427,66 +439,97 @@ mod tests {
 
     #[test]
     fn description_peg_count_is_correct() {
-        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal]).unwrap().pegs, 5);
+        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal]).unwrap().pegs,
+                   5);
     }
 
     #[test]
     fn description_to_string_is_ok_1() {
-        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal]).unwrap().
-            to_string(0b10100_u64).unwrap(), "x.x..");
+        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal])
+                       .unwrap()
+                       .to_string(0b10100_u64)
+                       .unwrap(),
+                   "x.x..");
     }
 
     #[test]
     fn description_to_string_is_ok_2() {
-        assert_eq!(Description::new("test", &(0..64).map(|_| "o").collect::<String>(), &[MoveDirections::Horizontal]).unwrap().to_string(!0u64).unwrap(), (0..64).map(|_| "x").collect::<String>());
+        assert_eq!(Description::new("test",
+                                    &(0..64).map(|_| "o").collect::<String>(),
+                                    &[MoveDirections::Horizontal])
+                       .unwrap()
+                       .to_string(!0u64)
+                       .unwrap(),
+                   (0..64).map(|_| "x").collect::<String>());
     }
 
     #[test]
     fn description_to_string_is_ok_3() {
-        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal]).unwrap().
-            to_string(0b10100_u64).unwrap(), " x.x.. ");
+        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
+                       .unwrap()
+                       .to_string(0b10100_u64)
+                       .unwrap(),
+                   " x.x.. ");
     }
 
     #[test]
     fn description_to_string_is_ok_4() {
-        assert_eq!(Description::new("test", ".ooooo.\n..ooo..\n...o...", &[MoveDirections::Horizontal, MoveDirections::Vertical]).unwrap().
-            to_string(0b101000011_u64).unwrap(), " x.x.. \n  ..x  \n   x   ");
+        assert_eq!(Description::new("test",
+                                    ".ooooo.\n..ooo..\n...o...",
+                                    &[MoveDirections::Horizontal, MoveDirections::Vertical])
+                       .unwrap()
+                       .to_string(0b101000011_u64)
+                       .unwrap(),
+                   " x.x.. \n  ..x  \n   x   ");
     }
 
     #[test]
     fn description_to_string_detects_invalid_state() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal]).unwrap()
-            .to_string(0b1111_u64).is_none());
+        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .to_string(0b1111_u64)
+                    .is_none());
     }
 
     #[test]
     fn description_from_string_is_ok() {
-        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal]).unwrap()
-            .from_string(" x.x.. ").unwrap(), 0b10100_u64);
+        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
+                       .unwrap()
+                       .from_string(" x.x.. ")
+                       .unwrap(),
+                   0b10100_u64);
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_1() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal]).unwrap()
-            .from_string("xxxx").is_none());
+        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_string("xxxx")
+                    .is_none());
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_2() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal]).unwrap()
-            .from_string("xxxxb").is_none());
+        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_string("xxxxb")
+                    .is_none());
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_3() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .from_string("  xxx").is_none());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_string("  xxx")
+                    .is_none());
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_4() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .from_string(" xxx  ").is_none());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_string(" xxx  ")
+                    .is_none());
     }
 
     #[test]
@@ -507,26 +550,34 @@ mod tests {
 
     #[test]
     fn description_to_vec_is_some() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .to_vec(0b100u64).is_some());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .to_vec(0b100u64)
+                    .is_some());
     }
 
     #[test]
     fn description_to_vec_is_none() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .to_vec(0b1101u64).is_none());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .to_vec(0b1101u64)
+                    .is_none());
     }
 
     #[test]
     fn description_from_vec_is_some() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .from_vec(vec![vec![-1, 1, 0, 0, -1]]).is_some());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_vec(vec![vec![-1, 1, 0, 0, -1]])
+                    .is_some());
     }
 
     #[test]
     fn description_from_vec_is_none() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal]).unwrap()
-            .from_vec(vec![vec![-1, 1, 0, -1, -1]]).is_none());
+        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                    .unwrap()
+                    .from_vec(vec![vec![-1, 1, 0, -1, -1]])
+                    .is_none());
     }
 
     #[test]

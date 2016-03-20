@@ -34,7 +34,7 @@ impl BoardSetInfo {
             one_access: 0.0,
             max_access: 0,
             collisions: 0.0,
-            max_collisions: 0
+            max_collisions: 0,
         }
     }
 }
@@ -50,7 +50,7 @@ impl BoardSet {
         data.extend(std::iter::repeat(EMPTY_STATE).take(size));
         BoardSet {
             len: 0,
-            data: data
+            data: data,
         }
     }
 
@@ -155,12 +155,14 @@ impl BoardSet {
         }
     }
 
-    pub fn foreach<F>(&self, mut func: F) where F: FnMut(State) {
+    pub fn foreach<F>(&self, mut func: F)
+        where F: FnMut(State)
+    {
         for x in self.data.iter().filter(|&x| *x != EMPTY_STATE) {
-           func(*x);
-       }
+            func(*x);
+        }
     }
-    
+
     pub fn chunks(&self, size: usize) -> Chunks<State> {
         self.data.chunks(size)
     }
@@ -200,7 +202,7 @@ impl BoardSet {
             if existing == EMPTY_STATE || o == existing {
                 return index;
             } else {
-                index = (index + 1) & (self.data.len()-1);
+                index = (index + 1) & (self.data.len() - 1);
             }
         }
     }
@@ -230,7 +232,7 @@ impl BoardSet {
                 *collision_counter += 1;
 
                 info.max_access = std::cmp::max(info.max_access, d);
-                info.average = (info.average*(count as f64) + (d as f64)) / (count+1) as f64;
+                info.average = (info.average * (count as f64) + (d as f64)) / (count + 1) as f64;
                 count += 1;
             }
             index += 1;
@@ -247,7 +249,7 @@ impl BoardSet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::board::EMPTY_STATE;
+    use board::EMPTY_STATE;
 
     #[test]
     fn boardset_test() {
@@ -275,7 +277,7 @@ mod tests {
     #[test]
     fn boardset_insert_all() {
         let mut x = BoardSet::new();
-        x.insert_all(&[1,2,3,4,5]);
+        x.insert_all(&[1, 2, 3, 4, 5]);
         x.foreach(|i| assert!(i > 0 && i < 6));
     }
 
@@ -283,8 +285,8 @@ mod tests {
     fn boardset_merge_1() {
         let mut x = BoardSet::new();
         let mut y = BoardSet::new();
-        x.insert_all(&[1,2,3,4,5]);
-        y.insert_all(&[1,2,3,4,5]);
+        x.insert_all(&[1, 2, 3, 4, 5]);
+        y.insert_all(&[1, 2, 3, 4, 5]);
         x.merge(&y);
         x.foreach(|i| assert!(i > 0 && i <= 5));
         assert_eq!(x.len(), 5);
@@ -294,8 +296,8 @@ mod tests {
     fn boardset_merge_2() {
         let mut x = BoardSet::new();
         let mut y = BoardSet::new();
-        x.insert_all(&[1,2,3,4,5]);
-        y.insert_all(&vec![6,7,8,9,10]);
+        x.insert_all(&[1, 2, 3, 4, 5]);
+        y.insert_all(&vec![6, 7, 8, 9, 10]);
         x.merge(&y);
         x.foreach(|i| assert!(i > 0 && i <= 10));
         assert_eq!(x.len(), 10);
