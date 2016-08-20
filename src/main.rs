@@ -2,6 +2,7 @@ mod board;
 mod boardset;
 mod boards;
 mod generator;
+mod generated;
 
 fn main() {
     println!("peg-solitaire rust edition
@@ -16,50 +17,49 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
             println!("  solve_eng");
             println!("  solve_eng_par");
             println!("  all");
-        },
-        Some(str) => match str.as_ref() {
-            "solve_eng" => {
-                boards::solve(8589869055u64);
-            },
-            "solve_eng_par" => {
-                boards::solve_parallel(8589869055u64);
-            },
-            "all" => {
-                let descriptions = [board::Description::new("English", "..ooo..\n\
-                                                    ..ooo..\n\
-                                                    ooooooo\n\
-                                                    ooooooo\n\
-                                                    ooooooo\n\
-                                                    ..ooo..\n\
-                                                    ..ooo..",
-                                                    &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
-                                board::Description::new("European", "..ooo..\n\
-                                                    .ooooo.\n\
-                                                    ooooooo\n\
-                                                    ooooooo\n\
-                                                    ooooooo\n\
-                                                    .ooooo.\n\
-                                                    ..ooo..",
-                                                    &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical]).unwrap(),
-                                board::Description::new("Holes15", "o....\n\
-                                                   oo...\n\
-                                                   ooo..\n\
-                                                   oooo.\n\
-                                                   ooooo",
-                                                   &[board::MoveDirections::Horizontal, board::MoveDirections::Vertical, board::MoveDirections::LeftDiagonal, board::MoveDirections::RightDiagonal]).unwrap()
-                                ];
-
-                for x in descriptions.iter() {
-                    println!("//Name: {}\n{}", x.name, generator::get_rust_code(&x));
+        }
+        Some(str) => {
+            match str.as_ref() {
+                "solve_eng" => {
+                    boards::solve(8589869055u64);
                 }
-                // let desc = &descriptions[0];
+                "solve_eng_par" => {
+                    boards::solve_parallel(8589869055u64);
+                }
+                "all" => {
+                    let descriptions =
+                        [board::Description::new("English",
+                                                 "..ooo..\n..ooo..\nooooooo\nooooooo\nooooooo\n.\
+                                                  .ooo..\n..ooo..",
+                                                 &[board::MoveDirections::Horizontal,
+                                                   board::MoveDirections::Vertical])
+                             .unwrap(),
+                         board::Description::new("European",
+                                                 "..ooo..\n.ooooo.\nooooooo\nooooooo\nooooooo\n.\
+                                                  ooooo.\n..ooo..",
+                                                 &[board::MoveDirections::Horizontal,
+                                                   board::MoveDirections::Vertical])
+                             .unwrap(),
+                         board::Description::new("Holes15",
+                                                 "o....\noo...\nooo..\noooo.\nooooo",
+                                                 &[board::MoveDirections::Horizontal,
+                                                   board::MoveDirections::Vertical,
+                                                   board::MoveDirections::LeftDiagonal,
+                                                   board::MoveDirections::RightDiagonal])
+                             .unwrap()];
 
-                // let start_fields = boards::possible_start_fields();
-                // start_fields.foreach(|x| {
-                //		println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
-                //  });
+                    for x in &descriptions {
+                        println!("//Name: {}\n{}", x.name, generator::get_rust_code(&x));
+                    }
+                    // let desc = &descriptions[0];
+
+                    // let start_fields = boards::possible_start_fields();
+                    // start_fields.foreach(|x| {
+                    // 		println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
+                    //  });
+                }
+                _ => {}
             }
-            _ => {},
-        },
+        }
     }
 }

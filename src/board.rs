@@ -122,7 +122,7 @@ impl Description {
                         continue;
                     }
 
-                    for dir in desc.directions.iter() {
+                    for dir in &desc.directions {
                         let (valid, x1, y1, x2, y2) = match *dir {
                             MoveDirections::Horizontal => (true, x + 1, y, x + 2, y),
                             MoveDirections::Vertical => (true, x, y + 1, x, y + 2),
@@ -204,7 +204,7 @@ impl Description {
             let mut transformations: Vec<Lut> = vec![];
             {
                 let mut movemask_as_vec: Vec<Lut> = vec![];
-                for x in desc.movemask.iter() {
+                for x in &desc.movemask {
                     if let Some(v) = desc.to_vec(*x) {
                         movemask_as_vec.push(v);
                     }
@@ -396,30 +396,30 @@ impl Description {
         Some(r)
     }
 
-//    /// verifies that the Board fulfills all requirements
-//    /// how can this be done without static_dispatch without breaking
-//    /// ```
-//    /// let board = European::new();
-//    /// assert!(board.description().verify_board(board));
-//    /// ```
-//    pub fn verify_board(&self) {
-//        // , board: &Board) {
-//        //        for mask in self.movemask.iter() {
-//        //            let eq_fields = board.equivalent_fields(*mask);
-//        //
-//        //            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
-//        //
-//        //            // check if the eq_fields are also valid move masks
-//        //            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
-//        //                assert!(self.movemask.contains(v));
-//        //            }
-//        //
-//        //            // check if the mask is in the eq_fields list
-//        //            assert!(board.equivalent_fields(*mask).contains(mask));
-//        //
-//        //            // normalize
-//        //        }
-//    }
+    //    /// verifies that the Board fulfills all requirements
+    //    /// how can this be done without static_dispatch without breaking
+    //    /// ```
+    //    /// let board = European::new();
+    //    /// assert!(board.description().verify_board(board));
+    //    /// ```
+    //    pub fn verify_board(&self) {
+    //        // , board: &Board) {
+    //        //        for mask in self.movemask.iter() {
+    //        //            let eq_fields = board.equivalent_fields(*mask);
+    //        //
+    //        //            // assert!(eq_fields.all(|x| x != EMPTY_STATE);
+    //        //
+    //        //            // check if the eq_fields are also valid move masks
+    //        //            for v in eq_fields.iter().filter(|&x| *x != EMPTY_STATE) {
+    //        //                assert!(self.movemask.contains(v));
+    //        //            }
+    //        //
+    //        //            // check if the mask is in the eq_fields list
+    //        //            assert!(board.equivalent_fields(*mask).contains(mask));
+    //        //
+    //        //            // normalize
+    //        //        }
+    //    }
 }
 
 #[cfg(test)]

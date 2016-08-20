@@ -6,7 +6,7 @@ fn generate_shift_code(transformation: &Transformation) -> String {
 
     let mut i = 0;
 
-    for (&shift, pos) in transformation.iter() {
+    for (&shift, pos) in transformation {
 
         line.push_str("(state & ");
         line.push_str(&pos.to_string());
@@ -43,13 +43,13 @@ fn generate_shift_code(transformation: &Transformation) -> String {
     result
 }
 
-fn format_mask(name: &str, vec: &Vec<State>) -> String {
+fn format_mask(name: &str, vec: &[State]) -> String {
     let mut result = String::new();
     let mut line = String::new();
 
     let mut pos = 0;
     line.push_str(&format!("const {}: [State; SIZE] = [", &name));
-    for i in vec.iter() {
+    for i in vec {
         line.push_str(&format!("{}u64", i));
 
         if pos != vec.len() - 1 {
@@ -86,7 +86,7 @@ pub fn get_rust_code(desc: &Description) -> String {
     r.push_str("    use std::cmp::min;\n");
 
     let mut pos = 0;
-    for trans in desc.transformations.iter() {
+    for trans in &desc.transformations {
         r.push_str(&format!("    let p{} = {};\n", pos, generate_shift_code(&trans)));
         pos += 1;
     }
@@ -100,7 +100,7 @@ pub fn get_rust_code(desc: &Description) -> String {
     r.push_str("    n[0] = state;\n");
 
     let mut pos = 1;
-    for trans in desc.transformations.iter() {
+    for trans in &desc.transformations {
         r.push_str(&format!("    n[{}] = {};\n", pos, generate_shift_code(&trans)));
         pos += 1;
     }

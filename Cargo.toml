@@ -6,5 +6,3 @@ authors = [ "Bernd Amend <berndamend+pegsolitaire@gmail.com>" ]
 [[bin]]
 name = "peg_solitaire"
 
-[dependencies]
-thread-scoped = "1.0"

@@ -39,6 +39,12 @@ impl BoardSetInfo {
     }
 }
 
+///
+/// # Examples
+/// # fn main() {
+/// let mut board = BoardSet::new();
+/// board.insert(20u64);
+/// # }
 impl BoardSet {
     pub fn new() -> BoardSet {
         BoardSet::with_capacity(0)
