@@ -1,9 +1,12 @@
 #![feature(associated_consts)]
+#![allow(dead_code)]
 mod board;
-mod boardset;
 mod boards;
-mod generator;
-mod generated;
+mod boardset;
+mod description;
+
+use board::Board;
+use boards::*;
 
 fn main() {
     println!("peg-solitaire rust edition
@@ -19,48 +22,36 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
             println!("  solve_eng_par");
             println!("  all");
         }
-        Some(str) => {
-            match str.as_ref() {
+        Some(s) => {
+            match s.as_ref() {
                 "solve_eng" => {
-                    boards::solve::<generated::EnglishBoard>(8589869055u64);
+                    EnglishBoard::solve(8589869055u64);
                 }
                 "solve_eng_par" => {
-                    boards::solve_parallel::<generated::EnglishBoard>(8589869055u64);
-                }
-                "all" => {
-                    let descriptions =
-                        [board::Description::new("English",
-                                                 "..ooo..\n..ooo..\nooooooo\nooooooo\nooooooo\n.\
-                                                  .ooo..\n..ooo..",
-                                                 &[board::MoveDirections::Horizontal,
-                                                   board::MoveDirections::Vertical])
-                             .unwrap(),
-                         board::Description::new("European",
-                                                 "..ooo..\n.ooooo.\nooooooo\nooooooo\nooooooo\n.\
-                                                  ooooo.\n..ooo..",
-                                                 &[board::MoveDirections::Horizontal,
-                                                   board::MoveDirections::Vertical])
-                             .unwrap(),
-                         board::Description::new("Holes15",
-                                                 "o....\noo...\nooo..\noooo.\nooooo",
-                                                 &[board::MoveDirections::Horizontal,
-                                                   board::MoveDirections::Vertical,
-                                                   board::MoveDirections::LeftDiagonal,
-                                                   board::MoveDirections::RightDiagonal])
-                             .unwrap()];
-
-                    for x in &descriptions {
-                        println!("//Name: {}\n{}", x.name, generator::get_rust_code(&x));
-                    }
-                    // let desc = &descriptions[0];
-
-                    // let start_fields = boards::possible_start_fields();
-                    // start_fields.foreach(|x| {
-                    //     println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
-                    //  });
+                    EnglishBoard::solve_parallel(8589869055u64);
                 }
                 _ => {}
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use board::Board;
+    use boards::*;
+
+    #[test]
+    fn solve_test() {
+        assert!(EnglishBoard::solve(8589869055u64)
+            .iter()
+            .fold(0, |o, i| o + i.len()) == 23475688);
+    }
+
+    #[test]
+    fn solve_parallel_test() {
+        assert!(EnglishBoard::solve_parallel(8589869055u64)
+            .iter()
+            .fold(0, |o, i| o + i.len()) == 23475688);
     }
 }

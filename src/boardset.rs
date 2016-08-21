@@ -1,7 +1,6 @@
 use std;
 use std::slice::Chunks;
-use board::State;
-use board::EMPTY_STATE;
+use description::{State, EMPTY_STATE};
 
 /// In the interest of memory-savings, we start with the smallest feasible
 /// power-of-two table size that can hold three items without rehashing. If we
@@ -255,7 +254,7 @@ impl BoardSet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use board::EMPTY_STATE;
+    use description::EMPTY_STATE;
 
     #[test]
     fn boardset_test() {

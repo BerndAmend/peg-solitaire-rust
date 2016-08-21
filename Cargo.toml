@@ -2,6 +2,7 @@
 name = "peg_solitaire"
 version = "0.0.1"
 authors = [ "Bernd Amend <berndamend+pegsolitaire@gmail.com>" ]
+build = "build.rs"
 
 [[bin]]
 name = "peg_solitaire"
