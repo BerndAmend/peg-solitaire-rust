@@ -27,6 +27,17 @@ pub enum DescriptionError {
     InvalidLayout,
 }
 
+pub trait Board {
+    const PEGS: usize;
+    const SIZE: usize;
+    const MOVEMASK: &'static [State];
+    const CHECKMASK1: &'static [State];
+    const CHECKMASK2: &'static [State];
+
+    fn normalize(state: State) -> State;
+    fn equivalent_fields(state: State) -> [State; 8];
+}
+
 #[derive(Debug)]
 pub struct Description {
     pub name: String,

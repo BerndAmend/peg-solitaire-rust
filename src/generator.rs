@@ -48,7 +48,7 @@ fn format_mask(name: &str, vec: &[State]) -> String {
     let mut line = String::new();
 
     let mut pos = 0;
-    line.push_str(&format!("const {}: [State; SIZE] = [", &name));
+    line.push_str(&format!("const {}: &'static [State] = &[", &name));
     for i in vec {
         line.push_str(&format!("{}u64", i));
 
@@ -75,7 +75,10 @@ fn format_mask(name: &str, vec: &[State]) -> String {
 pub fn get_rust_code(desc: &Description) -> String {
     let mut r = String::new();
 
-    r.push_str(&format!("const PEGS: usize = {};\n\n", desc.pegs));
+    r.push_str(&format!("pub struct {}Board;\n", desc.name));
+    r.push_str(&format!("impl Board for {}Board {{\n", desc.name));
+
+    r.push_str(&format!("const PEGS: usize = {};\n", desc.pegs));
     r.push_str(&format!("const SIZE: usize = {};\n", desc.movemask.len()));
     r.push_str(&format_mask("MOVEMASK", &desc.movemask));
     r.push_str(&format_mask("CHECKMASK1", &desc.checkmask1));
@@ -106,6 +109,7 @@ pub fn get_rust_code(desc: &Description) -> String {
     }
 
     r.push_str("    n\n");
+    r.push_str("}\n");
     r.push_str("}\n");
 
     r

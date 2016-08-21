@@ -1,6 +1,6 @@
 use board::*;
 use boardset::*;
-use generated::*;
+use generated::EnglishBoard;
 
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -8,13 +8,13 @@ use std::thread;
 const TRANSMIT_SIZE: usize = 1 << 19;
 
 // Solver
-pub fn solve(start: State) -> Vec<BoardSet> {
-    assert_eq!(start.count_ones() as usize, PEGS - 1);
+pub fn solve<T: Board>(start: State) -> Vec<BoardSet> {
+    assert_eq!(start.count_ones() as usize, T::PEGS - 1);
 
     let mut solution: Vec<BoardSet> = vec![];
 
     let mut current = BoardSet::new();
-    current.insert(normalize(start));
+    current.insert(T::normalize(start));
 
     let mut tmp = Vec::with_capacity(TRANSMIT_SIZE);
     while !current.is_empty() {
@@ -22,13 +22,13 @@ pub fn solve(start: State) -> Vec<BoardSet> {
         let mut next = BoardSet::new();
         tmp.clear();
         for &field in current.data.iter().filter(|&x| *x != EMPTY_STATE) {
-            for i in 0..SIZE {
-                let v = field & MOVEMASK[i];
-                if v == CHECKMASK1[i] || v == CHECKMASK2[i] {
-                    tmp.push(normalize(field ^ MOVEMASK[i]));
+            for i in 0..T::SIZE {
+                let v = field & T::MOVEMASK[i];
+                if v == T::CHECKMASK1[i] || v == T::CHECKMASK2[i] {
+                    tmp.push(T::normalize(field ^ T::MOVEMASK[i]));
                 }
             }
-            if tmp.len() > TRANSMIT_SIZE - SIZE {
+            if tmp.len() > TRANSMIT_SIZE - T::SIZE {
                 next.insert_all_abort_on_empty_state(&tmp);
                 tmp.clear();
             }
@@ -50,14 +50,14 @@ pub fn solve(start: State) -> Vec<BoardSet> {
     solution
 }
 
-pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
+pub fn solve_parallel<T: Board>(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
     let thread_count = 4;
-    assert_eq!(start.count_ones() as usize, PEGS - 1);
+    assert_eq!(start.count_ones() as usize, T::PEGS - 1);
 
     let mut solution: Vec<Arc<RwLock<BoardSet>>> = Vec::new();
 
     let mut current = Arc::new(RwLock::new(BoardSet::new()));
-    current.write().unwrap().insert(normalize(start));
+    current.write().unwrap().insert(T::normalize(start));
 
     while !current.read().unwrap().is_empty() {
         print!("search fields with {} removed pegs", solution.len() + 2);
@@ -74,10 +74,10 @@ pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
                     let mut tmp = Vec::with_capacity(TRANSMIT_SIZE);
 
                     for &field in slice.iter().filter(|&x| *x != EMPTY_STATE) {
-                        for i in 0..SIZE {
-                            let v = field & MOVEMASK[i];
-                            if v == CHECKMASK1[i] || v == CHECKMASK2[i] {
-                                tmp.push(normalize(field ^ MOVEMASK[i]));
+                        for i in 0..T::SIZE {
+                            let v = field & T::MOVEMASK[i];
+                            if v == T::CHECKMASK1[i] || v == T::CHECKMASK2[i] {
+                                tmp.push(T::normalize(field ^ T::MOVEMASK[i]));
                             }
                         }
 
@@ -88,7 +88,7 @@ pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
                                     tmp.clear();
                                 }
                                 Err(_) => {
-                                    if tmp.len() > TRANSMIT_SIZE - SIZE {
+                                    if tmp.len() > TRANSMIT_SIZE - T::SIZE {
                                         let mut t = next.write().unwrap();
                                         t.insert_all_abort_on_empty_state(&tmp);
                                         tmp.clear();
@@ -120,13 +120,13 @@ pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
     solution
 }
 
-pub fn possible_start_fields() -> BoardSet {
-    let mut set = BoardSet::with_capacity(PEGS);
+pub fn possible_start_fields<T: Board>() -> BoardSet {
+    let mut set = BoardSet::with_capacity(T::PEGS);
 
-    let base = (1u64 << (PEGS + 1)) - 1u64;
+    let base = (1u64 << (T::PEGS + 1)) - 1u64;
 
-    for i in 0..PEGS {
-        set.fast_insert(normalize(base ^ (1u64 << i)));
+    for i in 0..T::PEGS {
+        set.fast_insert(T::normalize(base ^ (1u64 << i)));
     }
 
     set

@@ -1,3 +1,4 @@
+#![feature(associated_consts)]
 mod board;
 mod boardset;
 mod boards;
@@ -21,10 +22,10 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
         Some(str) => {
             match str.as_ref() {
                 "solve_eng" => {
-                    boards::solve(8589869055u64);
+                    boards::solve::<generated::EnglishBoard>(8589869055u64);
                 }
                 "solve_eng_par" => {
-                    boards::solve_parallel(8589869055u64);
+                    boards::solve_parallel::<generated::EnglishBoard>(8589869055u64);
                 }
                 "all" => {
                     let descriptions =
