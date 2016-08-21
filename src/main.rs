@@ -28,7 +28,7 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
                     EnglishBoard::solve(8589869055u64);
                 }
                 "solve_eng_par" => {
-                    EnglishBoard::solve_parallel(8589869055u64);
+                    EnglishBoard::solve_parallel(8589869055u64, 4);
                 }
                 _ => {}
             }
@@ -49,8 +49,14 @@ mod tests {
     }
 
     #[test]
-    fn solve_parallel_test() {
-        assert!(EnglishBoard::solve_parallel(8589869055u64)
+    fn solve_parallel_tes_3() {
+        assert!(EnglishBoard::solve_parallel(8589869055u64, 3)
+            .iter()
+            .fold(0, |o, i| o + i.len()) == 23475688);
+    }
+    #[test]
+    fn solve_parallel_test_4() {
+        assert!(EnglishBoard::solve_parallel(8589869055u64, 4)
             .iter()
             .fold(0, |o, i| o + i.len()) == 23475688);
     }
