@@ -22,7 +22,6 @@ pub fn solve(start: State) -> Vec<BoardSet> {
         let mut next = BoardSet::new();
         tmp.clear();
         for &field in current.data.iter().filter(|&x| *x != EMPTY_STATE) {
-            next.reserve(SIZE);
             for i in 0..SIZE {
                 let v = field & MOVEMASK[i];
                 if v == CHECKMASK1[i] || v == CHECKMASK2[i] {
@@ -42,17 +41,20 @@ pub fn solve(start: State) -> Vec<BoardSet> {
         solution.push(current);
         current = next;
         println!(", found {} fields", current.len());
-        // println!(", found {:?}", current.read().unwrap().get_info());
+        // println!(", found {:?}", current.get_info());
     }
+
+    println!("number of possible fields {}",
+            solution.iter().fold(0, |o, i| o + i.len()));
 
     solution
 }
 
 pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
-    let thread_count = 8;
+    let thread_count = 4;
     assert_eq!(start.count_ones() as usize, PEGS - 1);
 
-    let mut solution: Vec<Arc<RwLock<BoardSet>>> = vec![];
+    let mut solution: Vec<Arc<RwLock<BoardSet>>> = Vec::new();
 
     let mut current = Arc::new(RwLock::new(BoardSet::new()));
     current.write().unwrap().insert(normalize(start));
@@ -67,7 +69,7 @@ pub fn solve_parallel(start: State) -> Vec<Arc<RwLock<BoardSet>>> {
                 let next = next.clone();
                 threads.push(thread::spawn(move || {
                     let cur = current.read().unwrap();
-                    let slice = cur.chunks(cur.data_len() / thread_count).nth(i).unwrap();
+                    let slice = cur.chunks(cur.data_len() / thread_count + 1).nth(i).unwrap();
 
                     let mut tmp = Vec::with_capacity(TRANSMIT_SIZE);
 

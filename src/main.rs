@@ -55,7 +55,7 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
 
                     // let start_fields = boards::possible_start_fields();
                     // start_fields.foreach(|x| {
-                    // 		println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
+                    //     println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
                     //  });
                 }
                 _ => {}
