@@ -306,7 +306,6 @@ impl Description {
         if !self.layout.chars().zip(state.chars()).all(|x| {
             match x {
                 (left, right) => {
-                    println!("{} == {}", left, right);
                     match left {
                         'o' => right == 'x' || right == '.',
                         '.' => right == ' ',

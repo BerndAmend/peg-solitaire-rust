@@ -89,7 +89,7 @@ fn get_rust_code(desc: &Description) -> String {
     r.push_str(&format_mask("CHECKMASK2", &desc.checkmask2));
 
     r.push_str("\n");
-    r.push_str("fn description() -> Description {\n");
+    r.push_str("fn desc() -> Description {\n");
     r.push_str(&format!(" Description::new({:?}, {:?}, &{:?}).unwrap()",
                         &desc.name,
                         &desc.layout,

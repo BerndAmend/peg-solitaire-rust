@@ -8,14 +8,22 @@ pub trait Board {
     const CHECKMASK1: &'static [State];
     const CHECKMASK2: &'static [State];
 
-    fn description() -> Description;
+    fn desc() -> Description;
 
     fn normalize(state: State) -> State;
     fn equivalent_fields(state: State) -> [State; 8];
 
     const TRANSMIT_SIZE: usize = 1 << 19;
 
-    fn solve(start: State) -> Vec<BoardSet> {
+    fn solve(start: State, thread_count: usize) -> Vec<BoardSet> {
+        if thread_count == 1 {
+            Self::solve_single(start)
+        } else {
+            Self::solve_parallel(start, thread_count)
+        }
+    }
+
+    fn solve_single(start: State) -> Vec<BoardSet> {
         assert_eq!(start.count_ones() as usize, Self::PEGS - 1);
 
         let mut solution: Vec<BoardSet> = vec![];
