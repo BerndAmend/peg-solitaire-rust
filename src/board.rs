@@ -1,5 +1,6 @@
 use boardset::*;
 use description::{Description, State, EMPTY_STATE};
+use utils::Stopwatch;
 
 pub trait Board {
     const PEGS: usize;
@@ -24,6 +25,7 @@ pub trait Board {
     }
 
     fn solve_single(start: State) -> Vec<BoardSet> {
+        let t = Stopwatch::default();
         assert_eq!(start.count_ones() as usize, Self::PEGS - 1);
 
         let mut solution: Vec<BoardSet> = vec![];
@@ -34,6 +36,7 @@ pub trait Board {
         let mut tmp = Vec::with_capacity(Self::TRANSMIT_SIZE);
         while !current.is_empty() {
             print!("search fields with {} removed pegs", solution.len() + 2);
+            let t = Stopwatch::default();
             let mut next = BoardSet::new();
             tmp.clear();
             for &field in current.data.iter().filter(|&x| *x != EMPTY_STATE) {
@@ -55,12 +58,12 @@ pub trait Board {
 
             solution.push(current);
             current = next;
-            println!(", found {} fields", current.len());
+            println!(", found {} fields in {}", current.len(), t);
             // println!(", found {:?}", current.get_info());
         }
 
-        println!("number of possible fields {}",
-                 solution.iter().fold(0, |o, i| o + i.len()));
+        println!("number of possible fields {} in {}",
+                 solution.iter().fold(0, |o, i| o + i.len()), t);
 
         solution
     }
@@ -68,6 +71,7 @@ pub trait Board {
     fn solve_parallel(start: State, thread_count: usize) -> Vec<BoardSet> {
         use std::thread;
         use std::sync::{Arc, RwLock};
+        let t = Stopwatch::default();
 
         assert_eq!(start.count_ones() as usize, Self::PEGS - 1);
 
@@ -79,6 +83,7 @@ pub trait Board {
 
             while !current.read().unwrap().is_empty() {
                 print!("search fields with {} removed pegs", solution.len() + 2);
+                let t = Stopwatch::default();
                 let next = Arc::new(RwLock::new(BoardSet::new()));
                 {
                     let mut threads = Vec::new();
@@ -130,7 +135,7 @@ pub trait Board {
 
                 solution.push(current);
                 current = next;
-                println!(", found {} fields", current.read().unwrap().len());
+                println!(", found {} fields in {}", current.read().unwrap().len(), t);
                 // println!(", found {:?}", current.read().unwrap().get_info());
             }
         }
@@ -143,8 +148,8 @@ pub trait Board {
             }
         }
 
-        println!("number of possible fields {}",
-                 result.iter().fold(0, |o, i| o + i.len()));
+        println!("number of possible fields {} in {}",
+                 result.iter().fold(0, |o, i| o + i.len()), t);
 
         result
     }

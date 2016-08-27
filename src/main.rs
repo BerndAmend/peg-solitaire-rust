@@ -1,5 +1,6 @@
 #![feature(associated_consts)]
 #![allow(dead_code)]
+mod utils;
 mod board;
 mod boards;
 mod boardset;
