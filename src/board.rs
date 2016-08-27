@@ -87,38 +87,39 @@ pub trait Board {
                         let next = next.clone();
                         threads.push(thread::spawn(move || {
                             let cur = current.read().unwrap();
-                            let slice =
-                                cur.chunks(cur.data_len() / thread_count + 1).nth(i).unwrap();
+                            if let Some(slice) =
+                                cur.chunks(cur.data_len() / thread_count + 1).nth(i) {
 
-                            let mut tmp = Vec::with_capacity(Self::TRANSMIT_SIZE);
+                                let mut tmp = Vec::with_capacity(Self::TRANSMIT_SIZE);
 
-                            for &field in slice.iter().filter(|&x| *x != EMPTY_STATE) {
-                                for i in 0..Self::SIZE {
-                                    let v = field & Self::MOVEMASK[i];
-                                    if v == Self::CHECKMASK1[i] || v == Self::CHECKMASK2[i] {
-                                        tmp.push(Self::normalize(field ^ Self::MOVEMASK[i]));
-                                    }
-                                }
-
-                                if tmp.len() / 3 > Self::TRANSMIT_SIZE / 4 {
-                                    match next.try_write() {
-                                        Ok(mut t) => {
-                                            t.insert_all_abort_on_empty_state(&tmp);
-                                            tmp.clear();
+                                for &field in slice.iter().filter(|&x| *x != EMPTY_STATE) {
+                                    for i in 0..Self::SIZE {
+                                        let v = field & Self::MOVEMASK[i];
+                                        if v == Self::CHECKMASK1[i] || v == Self::CHECKMASK2[i] {
+                                            tmp.push(Self::normalize(field ^ Self::MOVEMASK[i]));
                                         }
-                                        Err(_) => {
-                                            if tmp.len() > Self::TRANSMIT_SIZE - Self::SIZE {
-                                                let mut t = next.write().unwrap();
+                                    }
+
+                                    if tmp.len() / 3 > Self::TRANSMIT_SIZE / 4 {
+                                        match next.try_write() {
+                                            Ok(mut t) => {
                                                 t.insert_all_abort_on_empty_state(&tmp);
                                                 tmp.clear();
                                             }
-                                        }
-                                    };
+                                            Err(_) => {
+                                                if tmp.len() > Self::TRANSMIT_SIZE - Self::SIZE {
+                                                    let mut t = next.write().unwrap();
+                                                    t.insert_all_abort_on_empty_state(&tmp);
+                                                    tmp.clear();
+                                                }
+                                            }
+                                        };
+                                    }
                                 }
-                            }
 
-                            let mut t = next.write().unwrap();
-                            t.insert_all_abort_on_empty_state(&tmp);
+                                let mut t = next.write().unwrap();
+                                t.insert_all_abort_on_empty_state(&tmp);
+                            }
                         }));
                     }
 
