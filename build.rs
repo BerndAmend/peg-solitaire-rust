@@ -153,10 +153,4 @@ fn main() {
     for x in &descriptions {
         f.write_all(&get_rust_code(&x).as_bytes()).unwrap();
     }
-    // let desc = &descriptions[0];
-
-    // let start_fields = boards::possible_start_fields();
-    // start_fields.foreach(|x| {
-    //     println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
-    //  });
 }

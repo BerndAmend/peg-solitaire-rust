@@ -45,6 +45,13 @@ the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
             println!("  boards: english, euro, 15");
         }
     }
+
+    // let desc = &descriptions[0];
+
+    // let start_fields = boards::possible_start_fields();
+    // start_fields.foreach(|x| {
+    //     println!("Field {}:\n{}\n", x, desc.to_string(x).unwrap());
+    //  });
 }
 
 #[cfg(test)]
