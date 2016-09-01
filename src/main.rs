@@ -21,27 +21,22 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 as published by
 the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");
 
-    match (args().nth(1), args().nth(2)) {
-        (Some(s), Some(threads)) => {
-            let threads = threads.parse::<usize>().unwrap();
-            match s.as_ref() {
-                "english" => {
-                    let start = EnglishBoard::desc().from_string(ENGLISH_START).unwrap();
-                    EnglishBoard::solve(start, threads);
-                }
-                "euro" => {
-                    let start = EuropeanBoard::desc().from_string(EUROPEAN_START).unwrap();
-                    EuropeanBoard::solve(start, threads);
-                }
-                "15" => {
-                    let start = Holes15Board::desc().from_string(HOLES15_START).unwrap();
-                    Holes15Board::solve(start, threads);
-                }
-                _ => {}
-            }
-        }
+    match (args().nth(1).unwrap_or(String::new()).as_ref(),
+           args().nth(2).unwrap_or(String::new()).parse::<usize>()) {
+        ("english", Ok(threads)) => {
+            let start = EnglishBoard::desc().from_string(ENGLISH_START).unwrap();
+            EnglishBoard::solve(start, threads);
+        },
+        ("euro", Ok(threads)) => {
+            let start = EuropeanBoard::desc().from_string(EUROPEAN_START).unwrap();
+            EuropeanBoard::solve(start, threads);
+        },
+        ("15", Ok(threads)) => {
+            let start = Holes15Board::desc().from_string(HOLES15_START).unwrap();
+            Holes15Board::solve(start, threads);
+        },
         (_, _) => {
-            println!("usage {} <board> <threads>", std::env::args().nth(0).unwrap());
+            println!("usage {} <board> <threads: int>", std::env::args().nth(0).unwrap());
             println!("  boards: english, euro, 15");
         }
     }
