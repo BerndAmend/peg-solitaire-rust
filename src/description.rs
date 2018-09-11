@@ -137,10 +137,10 @@ impl Description {
                         if valid && x1 < x_max && y1 < y_max && lut[y1][x1] != -1 &&
                            x2 < x_max && y2 < y_max &&
                            lut[y2][x2] != -1 {
-                            desc.movemask.push(((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) |
-                                                (1u64 << lut[y2][x2])));
-                            desc.checkmask1.push(((1u64 << lut[y][x]) | (1u64 << lut[y1][x1])));
-                            desc.checkmask2.push(((1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2])));
+                            desc.movemask.push((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) |
+                                                (1u64 << lut[y2][x2]));
+                            desc.checkmask1.push((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]));
+                            desc.checkmask2.push((1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2]));
                         }
                     }
                 }
@@ -208,7 +208,7 @@ impl Description {
                     }
                 }
 
-                let mut add_transformation = |func: &Fn(&Lut) -> Lut| {
+                let mut add_transformation = |func: &dyn Fn(&Lut) -> Lut| {
                     let x = func(&desc.lut);
                     if have_same_shape(&desc.lut, &x) &&
                        movemask_as_vec.iter().all(|i| {

@@ -1,6 +1,6 @@
-use boardset::*;
-use description::{Description, State, EMPTY_STATE};
-use utils::Stopwatch;
+use crate::boardset::*;
+use crate::description::{Description, State, EMPTY_STATE};
+use crate::utils::Stopwatch;
 
 pub trait Board {
     const PEGS: usize;

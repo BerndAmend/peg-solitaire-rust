@@ -146,9 +146,9 @@ fn main() {
                             MoveDirections::RightDiagonal])
              .unwrap()];
 
-    f.write_all(b"use board::Board;\n").unwrap();
-    f.write_all(b"use description::MoveDirections::*;\n").unwrap();
-    f.write_all(b"use description::{Description, State, EMPTY_STATE};\n").unwrap();
+    f.write_all(b"use crate::board::Board;\n").unwrap();
+    f.write_all(b"use crate::description::MoveDirections::*;\n").unwrap();
+    f.write_all(b"use crate::description::{Description, State, EMPTY_STATE};\n").unwrap();
 
     for x in &descriptions {
         f.write_all(&get_rust_code(&x).as_bytes()).unwrap();

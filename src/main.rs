@@ -1,4 +1,4 @@
-#![feature(associated_consts)]
+#![deny(bare_trait_objects)]
 #![allow(dead_code)]
 mod utils;
 mod board;
@@ -7,8 +7,8 @@ mod boardset;
 mod description;
 
 use std::env::args;
-use board::Board;
-use boards::*;
+use crate::board::Board;
+use crate::boards::*;
 
 pub const ENGLISH_START: &'static str = "  xxx  \n  xxx  \nxxxxxxx\nxxx.xxx\nxxxxxxx\n  xxx  \n  xxx  ";
 pub const EUROPEAN_START: &'static str = "  xxx  \n xxxxx \nxxxxxxx\nxxx.xxx\nxxxxxxx\n xxxxx \n  xxx  ";
@@ -16,7 +16,7 @@ pub const HOLES15_START: &'static str = "x    \nxx   \nxxx  \nxxxx \n.xxxx";
 
 fn main() {
     println!("peg-solitaire rust edition
-Copyright (C) 2015-2016 Bernd Amend <berndamend+pegsolitaire@googlemail.com>
+Copyright (C) 2015-2018 Bernd Amend <berndamend+pegsolitaire@googlemail.com>
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 as published by
 the Free Software Foundation. This program comes with ABSOLUTELY NO WARRANTY");

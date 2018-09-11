@@ -23,6 +23,6 @@ impl Stopwatch {
 
 impl fmt::Display for Stopwatch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        return write!(f, "{}ms", self.elapsed_ms());
+        write!(f, "{}ms", self.elapsed_ms())
     }
 }

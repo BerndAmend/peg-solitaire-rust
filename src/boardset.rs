@@ -1,6 +1,6 @@
 use std;
 use std::slice::Chunks;
-use description::{State, EMPTY_STATE};
+use crate::description::{State, EMPTY_STATE};
 
 /// In the interest of memory-savings, we start with the smallest feasible
 /// power-of-two table size that can hold three items without rehashing. If we
