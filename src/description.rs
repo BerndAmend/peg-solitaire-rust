@@ -151,7 +151,7 @@ impl Description {
             return Err(DescriptionError::NoMovesPossible);
         }
 
-        // caculate transformations
+        // calculate transformations
         {
             fn vertical_flip(lut: &Lut) -> Lut {
                 let mut r = lut.clone();
