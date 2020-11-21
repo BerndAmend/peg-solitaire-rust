@@ -1,3 +1,4 @@
+use hashbrown::HashSet;
 use std::collections::HashMap;
 
 pub type State = u64;
@@ -5,6 +6,12 @@ pub const EMPTY_STATE: u64 = 0u64;
 
 pub type Lut = Vec<Vec<i32>>;
 pub type Transformation = HashMap<i32, State>;
+
+pub type BoardSet = HashSet<u64>;
+
+pub trait Solver {
+    fn solve(&self, start: State) -> Vec<BoardSet>;
+}
 
 #[derive(Debug, Clone)]
 pub enum MoveDirections {
@@ -25,34 +32,35 @@ pub enum DescriptionError {
     InvalidLayout,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Description {
     pub name: String,
     pub layout: String,
     pub directions: Vec<MoveDirections>,
     pub pegs: usize,
 
-    /// Describes how (x,y)-positions (map-key) inside the boardDescription correspond
+    /// Describes how (x,y)-positions (map-key) inside the layout correspond
     /// to the bit position used to represent the board
     pub lut: Lut,
 
     /// ...111... required to mask bits effected by a move and execute the move
-    pub movemask: Vec<State>,
+    pub move_mask: Vec<State>,
 
     /// ...110... required to check if a move is possible
-    pub checkmask1: Vec<State>,
+    pub check_mask1: Vec<State>,
 
     /// ...011... required to check if a move is possible
-    pub checkmask2: Vec<State>,
+    pub check_mask2: Vec<State>,
 
     pub transformations: Vec<Transformation>,
 }
 
 impl Description {
-    pub fn new(name: &str,
-               layout: &str,
-               directions: &[MoveDirections])
-               -> Result<Description, DescriptionError> {
+    pub fn new(
+        name: &str,
+        layout: &str,
+        directions: &[MoveDirections],
+    ) -> Result<Description, DescriptionError> {
         if name.is_empty() {
             return Err(DescriptionError::NoName);
         }
@@ -71,9 +79,9 @@ impl Description {
             directions: directions.to_vec(),
             pegs: layout.chars().filter(|&x| x == 'o').count(),
             lut: vec![],
-            movemask: vec![],
-            checkmask1: vec![],
-            checkmask2: vec![],
+            move_mask: vec![],
+            check_mask1: vec![],
+            check_mask2: vec![],
             transformations: vec![],
         };
 
@@ -93,7 +101,8 @@ impl Description {
 
         desc.lut = {
             let mut pos = desc.pegs as i32;
-            layout.lines()
+            layout
+                .lines()
                 .map(|line| {
                     line.chars()
                         .map(|x| {
@@ -134,20 +143,28 @@ impl Description {
                             }
                         };
 
-                        if valid && x1 < x_max && y1 < y_max && lut[y1][x1] != -1 &&
-                           x2 < x_max && y2 < y_max &&
-                           lut[y2][x2] != -1 {
-                            desc.movemask.push((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) |
-                                                (1u64 << lut[y2][x2]));
-                            desc.checkmask1.push((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]));
-                            desc.checkmask2.push((1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2]));
+                        if valid
+                            && x1 < x_max
+                            && y1 < y_max
+                            && lut[y1][x1] != -1
+                            && x2 < x_max
+                            && y2 < y_max
+                            && lut[y2][x2] != -1
+                        {
+                            desc.move_mask.push(
+                                (1u64 << lut[y][x]) | (1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2]),
+                            );
+                            desc.check_mask1
+                                .push((1u64 << lut[y][x]) | (1u64 << lut[y1][x1]));
+                            desc.check_mask2
+                                .push((1u64 << lut[y1][x1]) | (1u64 << lut[y2][x2]));
                         }
                     }
                 }
             }
         }
 
-        if desc.movemask.is_empty() {
+        if desc.move_mask.is_empty() {
             return Err(DescriptionError::NoMovesPossible);
         }
 
@@ -183,7 +200,6 @@ impl Description {
                     .collect()
             }
 
-
             fn have_same_shape(in1: &Lut, in2: &Lut) -> bool {
                 if in1.len() != in2.len() || in1[0].len() != in2[0].len() {
                     false
@@ -201,23 +217,24 @@ impl Description {
 
             let mut transformations: Vec<Lut> = vec![];
             {
-                let mut movemask_as_vec: Vec<Lut> = vec![];
-                for x in &desc.movemask {
+                let mut move_mask_as_vec: Vec<Lut> = vec![];
+                for x in &desc.move_mask {
                     if let Some(v) = desc.to_vec(*x) {
-                        movemask_as_vec.push(v);
+                        move_mask_as_vec.push(v);
                     }
                 }
 
                 let mut add_transformation = |func: &dyn Fn(&Lut) -> Lut| {
                     let x = func(&desc.lut);
-                    if have_same_shape(&desc.lut, &x) &&
-                       movemask_as_vec.iter().all(|i| {
-                        if let Some(trans) = desc.from_vec(func(i)) {
-                            desc.movemask.contains(&trans)
-                        } else {
-                            false
-                        }
-                    }) {
+                    if have_same_shape(&desc.lut, &x)
+                        && move_mask_as_vec.iter().all(|i| {
+                            if let Some(trans) = desc.from_vec(func(i)) {
+                                desc.move_mask.contains(&trans)
+                            } else {
+                                false
+                            }
+                        })
+                    {
                         transformations.push(x);
                     }
                 };
@@ -283,7 +300,11 @@ impl Description {
                     '\n' => '\n',
                     'o' => {
                         pos -= 1;
-                        if state & (1u64 << pos) != 0 { 'x' } else { '.' }
+                        if state & (1u64 << pos) != 0 {
+                            'x'
+                        } else {
+                            '.'
+                        }
                     }
                     _ => unreachable!(),
                 });
@@ -303,17 +324,13 @@ impl Description {
             return None;
         }
 
-        if !self.layout.chars().zip(state.chars()).all(|x| {
-            match x {
-                (left, right) => {
-                    match left {
-                        'o' => right == 'x' || right == '.',
-                        '.' => right == ' ',
-                        '\n' => right == '\n',
-                        _ => false,
-                    }
-                }
-            }
+        if !self.layout.chars().zip(state.chars()).all(|x| match x {
+            (left, right) => match left {
+                'o' => right == 'x' || right == '.',
+                '.' => right == ' ',
+                '\n' => right == '\n',
+                _ => false,
+            },
         }) {
             return None;
         }
@@ -333,7 +350,11 @@ impl Description {
             };
         }
 
-        if pos > self.pegs { None } else { Some(result) }
+        if pos > self.pegs {
+            None
+        } else {
+            Some(result)
+        }
     }
 
     /// blocked fields get -1, empty fields get 0, used fields 1
@@ -341,24 +362,26 @@ impl Description {
         if self.pegs < 64 && state > (1u64 << (self.pegs + 1) - 1) {
             None
         } else {
-            Some(self.lut
-                .iter()
-                .map(|o| {
-                    o.iter()
-                        .map(|&x| {
-                            if x == -1 {
-                                -1i32
-                            } else {
-                                if (state & (1u64 << x)) == 0 {
-                                    0i32
+            Some(
+                self.lut
+                    .iter()
+                    .map(|o| {
+                        o.iter()
+                            .map(|&x| {
+                                if x == -1 {
+                                    -1i32
                                 } else {
-                                    1i32
+                                    if (state & (1u64 << x)) == 0 {
+                                        0i32
+                                    } else {
+                                        1i32
+                                    }
                                 }
-                            }
-                        })
-                        .collect()
-                })
-                .collect())
+                            })
+                            .collect()
+                    })
+                    .collect(),
+            )
         }
     }
 
@@ -384,6 +407,45 @@ impl Description {
         }
         Some(r)
     }
+
+    pub fn possible_start_fields(&self) -> BoardSet {
+        let pegs = self.pegs;
+
+        let base = (1u64 << (pegs + 1)) - 1u64;
+
+        (0..pegs)
+            .map(|i| self.normalize(base ^ (1u64 << i)))
+            .collect()
+    }
+
+    /// this function is very slow
+    pub fn equivalent_fields(&self, state: State) -> Vec<State> {
+        let mut r: Vec<State> = self.alternatives_for_state(state).collect();
+        r.push(state);
+        r
+    }
+
+    /// this function is very slow
+    pub fn normalize(&self, state: State) -> State {
+        state.min(self.alternatives_for_state(state).min().unwrap())
+    }
+
+    pub fn alternatives_for_state<'a>(&'a self, state: State) -> impl Iterator<Item = State> + 'a {
+        self.transformations.iter().map(move |transformation| {
+            let mut temp_state = EMPTY_STATE;
+            for (&shift, &pos) in transformation {
+                temp_state |= if shift > 0 {
+                    (state & pos) << (shift as u64)
+                } else if shift < 0 {
+                    (state & pos) >> i32::abs(shift) as u64
+                } else {
+                    state & pos
+                };
+            }
+
+            temp_state
+        })
+    }
 }
 
 #[cfg(test)]
@@ -392,47 +454,63 @@ mod tests {
 
     #[test]
     fn description_has_no_name() {
-        assert_eq!(Description::new("", "ooo", &[MoveDirections::Horizontal]).err(),
-                   Some(DescriptionError::NoName));
+        assert_eq!(
+            Description::new("", "ooo", &[MoveDirections::Horizontal]).err(),
+            Some(DescriptionError::NoName)
+        );
     }
 
     #[test]
     fn description_has_not_enough_pegs() {
-        assert_eq!(Description::new("test", "o", &[MoveDirections::Horizontal]).err(),
-                   Some(DescriptionError::NotEnoughPegs));
+        assert_eq!(
+            Description::new("test", "o", &[MoveDirections::Horizontal]).err(),
+            Some(DescriptionError::NotEnoughPegs)
+        );
     }
 
     #[test]
     fn description_has_no_move_directions() {
-        assert_eq!(Description::new("test", "ooo", &[]).err(),
-                   Some(DescriptionError::NoMoveDirections));
+        assert_eq!(
+            Description::new("test", "ooo", &[]).err(),
+            Some(DescriptionError::NoMoveDirections)
+        );
     }
 
     #[test]
     fn description_too_many_pegs() {
-        assert_eq!(Description::new("test",
-                                    &(0..65).map(|_| "o").collect::<String>(),
-                                    &[MoveDirections::Horizontal])
-                       .err(),
-                   Some(DescriptionError::TooManyPegs));
+        assert_eq!(
+            Description::new(
+                "test",
+                &(0..65).map(|_| "o").collect::<String>(),
+                &[MoveDirections::Horizontal]
+            )
+            .err(),
+            Some(DescriptionError::TooManyPegs)
+        );
     }
 
     #[test]
     fn description_line_length_not_equal() {
-        assert_eq!(Description::new("test", "oo\nooo", &[MoveDirections::Horizontal]).err(),
-                   Some(DescriptionError::LineLengthNotEqual));
+        assert_eq!(
+            Description::new("test", "oo\nooo", &[MoveDirections::Horizontal]).err(),
+            Some(DescriptionError::LineLengthNotEqual)
+        );
     }
 
     #[test]
     fn description_no_moves_possible() {
-        assert_eq!(Description::new("test", "ooo", &[MoveDirections::Vertical]).err(),
-                   Some(DescriptionError::NoMovesPossible));
+        assert_eq!(
+            Description::new("test", "ooo", &[MoveDirections::Vertical]).err(),
+            Some(DescriptionError::NoMovesPossible)
+        );
     }
 
     #[test]
     fn description_invalid_layout_is_detected() {
-        assert_eq!(Description::new("test", " .ooo", &[MoveDirections::Horizontal]).err(),
-                   Some(DescriptionError::InvalidLayout));
+        assert_eq!(
+            Description::new("test", " .ooo", &[MoveDirections::Horizontal]).err(),
+            Some(DescriptionError::InvalidLayout)
+        );
     }
 
     #[test]
@@ -447,97 +525,125 @@ mod tests {
 
     #[test]
     fn description_peg_count_is_correct() {
-        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal]).unwrap().pegs,
-                   5);
+        assert_eq!(
+            Description::new("test", "ooooo", &[MoveDirections::Horizontal])
+                .unwrap()
+                .pegs,
+            5
+        );
     }
 
     #[test]
     fn description_to_string_is_ok_1() {
-        assert_eq!(Description::new("test", "ooooo", &[MoveDirections::Horizontal])
-                       .unwrap()
-                       .to_string(0b10100_u64)
-                       .unwrap(),
-                   "x.x..");
+        assert_eq!(
+            Description::new("test", "ooooo", &[MoveDirections::Horizontal])
+                .unwrap()
+                .to_string(0b10100_u64)
+                .unwrap(),
+            "x.x.."
+        );
     }
 
     #[test]
     fn description_to_string_is_ok_2() {
-        assert_eq!(Description::new("test",
-                                    &(0..64).map(|_| "o").collect::<String>(),
-                                    &[MoveDirections::Horizontal])
-                       .unwrap()
-                       .to_string(!0u64)
-                       .unwrap(),
-                   (0..64).map(|_| "x").collect::<String>());
+        assert_eq!(
+            Description::new(
+                "test",
+                &(0..64).map(|_| "o").collect::<String>(),
+                &[MoveDirections::Horizontal]
+            )
+            .unwrap()
+            .to_string(!0u64)
+            .unwrap(),
+            (0..64).map(|_| "x").collect::<String>()
+        );
     }
 
     #[test]
     fn description_to_string_is_ok_3() {
-        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
-                       .unwrap()
-                       .to_string(0b10100_u64)
-                       .unwrap(),
-                   " x.x.. ");
+        assert_eq!(
+            Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .to_string(0b10100_u64)
+                .unwrap(),
+            " x.x.. "
+        );
     }
 
     #[test]
     fn description_to_string_is_ok_4() {
-        assert_eq!(Description::new("test",
-                                    ".ooooo.\n..ooo..\n...o...",
-                                    &[MoveDirections::Horizontal, MoveDirections::Vertical])
-                       .unwrap()
-                       .to_string(0b101000011_u64)
-                       .unwrap(),
-                   " x.x.. \n  ..x  \n   x   ");
+        assert_eq!(
+            Description::new(
+                "test",
+                ".ooooo.\n..ooo..\n...o...",
+                &[MoveDirections::Horizontal, MoveDirections::Vertical]
+            )
+            .unwrap()
+            .to_string(0b101000011_u64)
+            .unwrap(),
+            " x.x.. \n  ..x  \n   x   "
+        );
     }
 
     #[test]
     fn description_to_string_detects_invalid_state() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
-            .unwrap()
-            .to_string(0b1111_u64)
-            .is_none());
+        assert!(
+            Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                .unwrap()
+                .to_string(0b1111_u64)
+                .is_none()
+        );
     }
 
     #[test]
     fn description_from_string_is_ok() {
-        assert_eq!(Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
-                       .unwrap()
-                       .from_string(" x.x.. ")
-                       .unwrap(),
-                   0b10100_u64);
+        assert_eq!(
+            Description::new("test", ".ooooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_string(" x.x.. ")
+                .unwrap(),
+            0b10100_u64
+        );
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_1() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_string("xxxx")
-            .is_none());
+        assert!(
+            Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_string("xxxx")
+                .is_none()
+        );
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_2() {
-        assert!(Description::new("test", "ooo", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_string("xxxxb")
-            .is_none());
+        assert!(
+            Description::new("test", "ooo", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_string("xxxxb")
+                .is_none()
+        );
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_3() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_string("  xxx")
-            .is_none());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_string("  xxx")
+                .is_none()
+        );
     }
 
     #[test]
     fn description_from_string_detects_invalid_state_4() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_string(" xxx  ")
-            .is_none());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_string(" xxx  ")
+                .is_none()
+        );
     }
 
     #[test]
@@ -558,34 +664,42 @@ mod tests {
 
     #[test]
     fn description_to_vec_is_some() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .to_vec(0b100u64)
-            .is_some());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .to_vec(0b100u64)
+                .is_some()
+        );
     }
 
     #[test]
     fn description_to_vec_is_none() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .to_vec(0b1101u64)
-            .is_none());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .to_vec(0b1101u64)
+                .is_none()
+        );
     }
 
     #[test]
     fn description_from_vec_is_some() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_vec(vec![vec![-1, 1, 0, 0, -1]])
-            .is_some());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_vec(vec![vec![-1, 1, 0, 0, -1]])
+                .is_some()
+        );
     }
 
     #[test]
     fn description_from_vec_is_none() {
-        assert!(Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
-            .unwrap()
-            .from_vec(vec![vec![-1, 1, 0, -1, -1]])
-            .is_none());
+        assert!(
+            Description::new("test", ".ooo.", &[MoveDirections::Horizontal])
+                .unwrap()
+                .from_vec(vec![vec![-1, 1, 0, -1, -1]])
+                .is_none()
+        );
     }
 
     #[test]

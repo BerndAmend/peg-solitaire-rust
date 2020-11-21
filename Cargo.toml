@@ -1,10 +1,19 @@
 [package]
+authors = ["Bernd Amend <berndamend+pegsolitaire@gmail.com>"]
+edition = "2018"
 name = "peg_solitaire"
 version = "0.0.1"
-authors = [ "Bernd Amend <berndamend+pegsolitaire@gmail.com>" ]
-build = "build.rs"
-edition = '2018'
-
 [[bin]]
 name = "peg_solitaire"
 
+[dependencies]
+hashbrown = { version="*", features=["rayon"]}
+rayon = "*"
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm10-0"] }
+ocl = "*"
+
+[profile.release]
+opt-level = 3
+#lto = "fat"
+codegen-units = 1
+debug = false
